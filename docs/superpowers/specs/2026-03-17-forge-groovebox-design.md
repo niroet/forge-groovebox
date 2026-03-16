@@ -145,6 +145,7 @@ Four engines, switchable per-voice via tabs:
 - Grain size: 1-100ms
 - Density: grains per second
 - Source: oscillator output or frozen buffer
+- Freeze interaction: FREEZE button captures 2 seconds of current oscillator output into a buffer. Grains read from this frozen buffer. Pressing FREEZE again captures a new buffer, replacing the old one.
 - Same filter + envelope chain
 
 **Voice allocation**: 8 pre-allocated voices. Voice stealing: oldest note released first, then oldest note held. Zero allocation on the audio thread — all voices exist at startup.
@@ -215,7 +216,9 @@ Each drum voice is pre-allocated. Triggered by sequencer or keyboard/MIDI.
 
 ### Recording Modes
 
-**Step Record** (default): Click steps on/off in the grid. Velocity by vertical click position (top=loud, bottom=soft). Shift+click for accent/flam.
+**Step Record — Drums** (default): Click steps on/off in the grid. Velocity by vertical click position (top=loud, bottom=soft). Shift+click for accent/flam.
+
+**Step Record — Synth**: Select a step in the synth sequence, then play a note on the keyboard/MIDI to enter it. Arrow keys move between steps. Hold step + drag knob to P-lock. Gate length adjustable via Ctrl+drag on the step.
 
 **Real-Time Record**: Press ARM, play drums via keyboard/MIDI while sequencer runs. Input quantizes to nearest step. Captures velocity.
 
@@ -236,6 +239,8 @@ Each drum voice is pre-allocated. Triggered by sequencer or keyboard/MIDI.
 - All triggerable by: keyboard (1–9), MIDI CC, VEGA commands
 
 **Fill button**: Hold to activate all "fill-only" conditional triggers. Release to return to normal. Instant performative fills.
+
+**Auto-fill generation**: When `triggerFill()` is called (by VEGA or Fill button before section transition), the system generates a 1-bar fill by: (1) taking the current drum pattern, (2) increasing hit density on the last 4 steps (doubling/tripling kick and snare), (3) adding a snare roll (16th notes) on the final 2 steps, (4) optional pitch rise on kick. FillType options: SIMPLE (density increase only), ROLL (snare roll), BUILDUP (density + pitch rise + hat open), BREAKDOWN (strip to kick only then explode).
 
 **Control All**: Hold Shift + drag any knob = applies change to ALL tracks. For buildups, breakdowns, sweeps.
 
@@ -296,8 +301,13 @@ Master FX chain, applied after mixer, before output. Each effect toggleable inde
 @Tool("Set envelope") void setEnvelope(int voice, double attack, double decay, double sustain, double release)
 @Tool("Set filter envelope") void setFilterEnvelope(int voice, double attack, double decay, double sustain, double release)
 
+// Synth sequencer
+@Tool("Set synth note sequence") void setSynthPattern(int[] midiNotes, double[] velocities, double[] gateLengths, boolean[] slides)
+@Tool("Set parameter lock on synth step") void setSynthPLock(int step, String param, double value)
+
 // Drums
 @Tool("Set 16-step drum pattern") void setDrumPattern(DrumTrack track, double[] steps)
+@Tool("Set drum step with full detail") void setDrumStep(DrumTrack track, int step, double velocity, boolean accent, boolean flam, TrigCondition condition)
 @Tool("Configure drum voice") void setDrumPatch(DrumTrack track, double pitch, double decay, double toneNoise)
 @Tool("Set parameter lock on drum step") void setDrumPLock(DrumTrack track, int step, String param, double value)
 
@@ -542,3 +552,20 @@ Copy/Paste: Ctrl+C/V/D
 5. **VEGA enhances, never blocks**: AI is always optional. Every VEGA action can be done manually. VEGA never interrupts audio.
 6. **Consistent interaction model**: Every track works the same way. Every pattern edits the same way. Learn once, apply everywhere.
 7. **Sound quality is non-negotiable**: JSyn's battle-tested DSP + proper filter implementations + professional-grade effects chain.
+
+## Project Persistence
+
+**Project file** (`.forge`): JSON-based project file containing all state — synth patches, drum patches, patterns, sections, FX settings, BPM, key, VEGA conversation history. Save/Load via Protocol menu (Ctrl+Shift+S = Save As, Ctrl+O = Open).
+
+**Auto-save**: Temp save (Ctrl+S) writes to a `.forge.autosave` file in the project directory. On crash recovery, the app detects the autosave and offers to restore.
+
+**Default project**: App launches with a sensible default project — a basic subtractive patch, empty drum pattern, 128 BPM, no FX. Ready to play immediately.
+
+## API Key Configuration
+
+VEGA requires a Claude API key from Anthropic. Configuration priority:
+1. Environment variable: `ANTHROPIC_API_KEY`
+2. Config file: `~/.forge/config.json` with `{"apiKey": "sk-ant-..."}`
+3. Settings dialog: VEGA menu → "Configure API Key" — stores to config file
+
+If no key is configured, VEGA panel shows a setup prompt instead of the chat. All other groovebox features work without an API key.
