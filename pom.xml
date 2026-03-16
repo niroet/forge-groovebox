@@ -16,15 +16,20 @@
         <javafx.version>21.0.2</javafx.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <dependencies>
-        <!-- JSyn synthesis engine — not on Maven Central; add via JitPack or local JAR in a later task -->
-        <!--
+        <!-- JSyn synthesis engine via JitPack -->
         <dependency>
-            <groupId>com.jsyn</groupId>
+            <groupId>com.github.philburk</groupId>
             <artifactId>jsyn</artifactId>
             <version>17.1.0</version>
         </dependency>
-        -->
 
         <!-- JavaFX -->
         <dependency>

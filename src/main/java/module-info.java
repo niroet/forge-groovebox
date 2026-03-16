@@ -8,6 +8,7 @@ module com.forge {
     requires langchain4j.anthropic;
     requires iirj;
     requires java.desktop; // for javax.sound.midi, javax.sound.sampled
+    requires jsyn;
 
     opens com.forge.model to com.google.gson; // Gson reflection for persistence
 
