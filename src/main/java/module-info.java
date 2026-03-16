@@ -15,4 +15,5 @@ module com.forge {
     exports com.forge;
     exports com.forge.model;
     exports com.forge.audio.engine;
+    exports com.forge.audio.synth;
 }
