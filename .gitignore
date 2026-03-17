@@ -2,3 +2,18 @@ target/
 *.class
 *.jar
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# FORGE runtime
+*.forge.autosave
+
+# Brainstorm sessions
+.superpowers/
