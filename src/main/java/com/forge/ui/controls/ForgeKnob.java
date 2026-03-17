@@ -110,9 +110,9 @@ public class ForgeKnob extends VBox {
         // Prominent glow on hover
         canvas.setOnMouseEntered(e -> {
             DropShadow hoverGlow = new DropShadow();
-            hoverGlow.setColor(Color.color(accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue(), 0.8));
-            hoverGlow.setRadius(14);
-            hoverGlow.setSpread(0.3);
+            hoverGlow.setColor(Color.color(accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue(), 0.6));
+            hoverGlow.setRadius(6);
+            hoverGlow.setSpread(0.1);
             canvas.setEffect(hoverGlow);
         });
 

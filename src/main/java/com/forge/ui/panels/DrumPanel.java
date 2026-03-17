@@ -146,19 +146,6 @@ public class DrumPanel extends VBox {
                 StepButton btn = stepButtons[t][step];
                 if (btn.isActive()) {
                     btn.setState(StepButton.ButtonState.PLAYING);
-                    // Brief scale-up animation for tactile feedback
-                    Timeline pop = new Timeline(
-                        new KeyFrame(Duration.ZERO,
-                            new KeyValue(btn.scaleXProperty(), 1.0),
-                            new KeyValue(btn.scaleYProperty(), 1.0)),
-                        new KeyFrame(Duration.millis(50),
-                            new KeyValue(btn.scaleXProperty(), 1.15),
-                            new KeyValue(btn.scaleYProperty(), 1.15)),
-                        new KeyFrame(Duration.millis(100),
-                            new KeyValue(btn.scaleXProperty(), 1.0),
-                            new KeyValue(btn.scaleYProperty(), 1.0))
-                    );
-                    pop.play();
                 }
             }
         }
@@ -368,22 +355,11 @@ public class DrumPanel extends VBox {
             ForgeColors.hex(ForgeColors.ARGENT_RED) +
             "; -fx-border-width: 1; -fx-background-radius: 3; -fx-border-radius: 3;");
 
-        // Start pulsing glow animation on RIP button
-        if (playPulseTimeline != null) playPulseTimeline.stop();
-        DropShadow pulseGlow = new DropShadow();
-        pulseGlow.setColor(Color.web("#ff2200"));
-        pulseGlow.setRadius(4);
-        playBtn.setEffect(pulseGlow);
-        playPulseTimeline = new Timeline(
-            new KeyFrame(Duration.ZERO,
-                new KeyValue(pulseGlow.radiusProperty(), 4)),
-            new KeyFrame(Duration.millis(500),
-                new KeyValue(pulseGlow.radiusProperty(), 12)),
-            new KeyFrame(Duration.millis(1000),
-                new KeyValue(pulseGlow.radiusProperty(), 4))
-        );
-        playPulseTimeline.setCycleCount(Timeline.INDEFINITE);
-        playPulseTimeline.play();
+        // Static glow on RIP button while playing
+        DropShadow playGlow = new DropShadow();
+        playGlow.setColor(Color.web("#ff2200"));
+        playGlow.setRadius(8);
+        playBtn.setEffect(playGlow);
     }
 
     public void stopPlayback() {

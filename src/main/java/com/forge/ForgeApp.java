@@ -1016,9 +1016,7 @@ public class ForgeApp extends Application {
             : "-fx-border-color: transparent transparent transparent #1a1a1a; -fx-border-width: 0 0 0 1;");
         wireVegaPanel();
 
-        // Enable caching on static panel headers/labels for GPU performance
-        synthPanel.setCache(true);
-        synthPanel.setCacheHint(javafx.scene.CacheHint.SPEED);
+        // Note: do NOT cache interactive panels — breaks knob/button rendering
 
         center.getChildren().addAll(synthPanel, centerColumn, vegaPanel);
         return center;
