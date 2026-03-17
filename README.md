@@ -130,14 +130,17 @@ Without an API key, VEGA shows a setup prompt but the entire groovebox works wit
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Language | Java 21 (virtual threads, ZGC) |
-| UI | JavaFX 21 |
-| Synthesis | [JSyn](https://github.com/philburk/jsyn) |
-| Filters | [iirj](https://github.com/berndporr/iirj) |
-| AI | [LangChain4j](https://github.com/langchain4j/langchain4j) + Claude |
-| Build | Maven |
+Everything is **pure Java** — no native code, no C libraries, no external audio engines. The synth DSP runs as math on Java doubles, JSyn handles getting samples to your speakers at 44,100/sec, and JavaFX renders the UI at 60fps. One process, three threads (audio, UI, AI).
+
+| Component | Technology | What it does |
+|-----------|-----------|-------------|
+| Language | **Java 21** | Modern Java with virtual threads (lightweight async for VEGA API calls) and ZGC (garbage collector that won't freeze your audio mid-beat) |
+| UI | **[JavaFX 21](https://openjfx.io/)** | Desktop UI toolkit — all the windows, knobs, buttons, Canvas drawing for visualizers, 3D for terrain mode |
+| Synthesis | **[JSyn](https://github.com/philburk/jsyn)** | Audio synthesis library by Phil Burk (the guy who wrote Java's audio spec). Provides oscillators, filters, envelopes, mixers — the building blocks wired together for sound. Runs its own real-time audio thread |
+| Filters | **[iirj](https://github.com/berndporr/iirj)** | IIR filter library for Butterworth/Chebyshev filters used in the parametric EQ |
+| AI | **[LangChain4j](https://github.com/langchain4j/langchain4j)** + Claude | Connects VEGA to Anthropic's Claude. Handles tool-calling so Claude can invoke `setBPM()`, `setDrumPattern()`, etc. Haiku for fast tweaks, Sonnet for complex composition |
+| JSON | **[Gson](https://github.com/google/gson)** | Save/load `.forge` project files, undo snapshots, API key config |
+| Build | **[Maven](https://maven.apache.org/)** | Dependency management and build tool. `pom.xml` = Java's `package.json` |
 
 ## Project Structure
 
