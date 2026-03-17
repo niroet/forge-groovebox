@@ -877,14 +877,9 @@ public class ForgeApp extends Application {
 
         bar.getChildren().addAll(title, spacer, btnMin, btnMax, btnClose);
 
-        bar.setOnMousePressed(e -> {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-        });
-        bar.setOnMouseDragged(e -> {
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        });
+        // NOTE: Custom drag handler removed — stage.setX()/setY() fights with
+        // tiling window managers (Hyprland, Sway) causing elements to "float".
+        // The WM's native title bar handles window dragging.
 
         return bar;
     }
