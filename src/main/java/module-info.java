@@ -22,4 +22,5 @@ module com.forge {
     exports com.forge.audio.effects;
     exports com.forge.ui.theme;
     exports com.forge.ui.controls;
+    exports com.forge.ui.panels;
 }
