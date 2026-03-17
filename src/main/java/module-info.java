@@ -5,6 +5,7 @@ module com.forge {
     requires javafx.media;
     requires com.google.gson;
     requires langchain4j;
+    requires langchain4j.core;
     requires langchain4j.anthropic;
     requires iirj;
     requires java.desktop; // for javax.sound.midi, javax.sound.sampled
@@ -24,4 +25,5 @@ module com.forge {
     exports com.forge.ui.controls;
     exports com.forge.ui.panels;
     exports com.forge.ui.visualizer;
+    exports com.forge.vega;
 }

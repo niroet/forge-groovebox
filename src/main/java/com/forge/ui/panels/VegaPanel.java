@@ -3,6 +3,7 @@ package com.forge.ui.panels;
 import com.forge.ui.theme.ForgeColors;
 
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -285,6 +286,14 @@ public class VegaPanel extends VBox {
     /** Returns true when the avatar is in DIVINE mode. */
     public boolean isDivineMode() {
         return avatar != null && avatar.isDivineMode();
+    }
+
+    /**
+     * Returns the divine mode {@link BooleanProperty} so callers can observe mode changes.
+     * Returns {@code null} if the avatar has not been initialised yet.
+     */
+    public BooleanProperty divineModeProperty() {
+        return avatar != null ? avatar.divineModeProperty() : null;
     }
 
     // =========================================================================

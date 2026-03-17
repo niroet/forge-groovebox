@@ -11,6 +11,7 @@ import com.forge.audio.synth.SynthVoice;
 import com.forge.audio.synth.VoiceAllocator;
 import com.forge.model.DrumPatch;
 import com.forge.model.DrumTrack;
+import com.forge.model.ProjectState;
 import com.forge.model.SynthPatch;
 import com.forge.ui.panels.DrumPanel;
 import com.forge.ui.panels.SynthPanel;
@@ -20,6 +21,7 @@ import com.forge.ui.theme.CrtOverlay;
 import com.forge.ui.theme.ForgeColors;
 import com.forge.ui.visualizer.VisualizerPanel;
 import com.forge.model.VisualizerMode;
+import com.forge.vega.VegaAgent;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -76,6 +78,12 @@ public class ForgeApp extends Application {
     private EffectsChain effectsChain;
     private SynthPatch globalPatch;
     private ClockDriver clockDriver;
+
+    // ---- Project model ------------------------------------------------------
+    private ProjectState projectState;
+
+    // ---- VEGA AI ------------------------------------------------------------
+    private VegaAgent vegaAgent;
 
     // ---- UI panels ----------------------------------------------------------
     private SynthPanel synthPanel;
@@ -209,6 +217,9 @@ public class ForgeApp extends Application {
     // =========================================================================
 
     private void buildAudioGraph() {
+        // Project state — single source of truth for all model data
+        projectState = new ProjectState();
+
         audioEngine = new AudioEngine();
         audioEngine.start();
 
@@ -289,6 +300,11 @@ public class ForgeApp extends Application {
         // Effects chain -- skip wiring into signal path for now (mixer -> lineOut direct)
         // Effects chain is created for UI control but not inserted into audio path
         effectsChain = new EffectsChain(audioEngine.getSynth());
+
+        // VEGA AI agent — receives the live audio components and project state
+        projectState.bpm = 128.0;
+        vegaAgent = new VegaAgent(
+                projectState, drumEngine, voiceAllocator, clock, sequencer, effectsChain);
     }
 
     private void wireAudioToUI() {
@@ -302,20 +318,25 @@ public class ForgeApp extends Application {
     }
 
     private void wireVegaPanel() {
-        // Echo handler: show user message then echo a VEGA response
+        // Sync divine mode: when the avatar toggles, update the agent
+        if (vegaPanel.divineModeProperty() != null) {
+            vegaPanel.divineModeProperty().addListener((obs, oldVal, newVal) ->
+                    vegaAgent.setDivineMode(newVal));
+        }
+
+        // Wire user messages → VegaAgent
         vegaPanel.setOnMessageSent(text -> {
             vegaPanel.addSlayerMessage(text);
             vegaPanel.clearInput();
             vegaPanel.setThinking(true);
 
-            // Simulate brief processing delay, then echo
-            javafx.animation.PauseTransition pause =
-                new javafx.animation.PauseTransition(javafx.util.Duration.millis(400));
-            pause.setOnFinished(e -> {
-                vegaPanel.setThinking(false);
-                vegaPanel.addVegaMessage("Received: " + text);
-            });
-            pause.play();
+            vegaAgent.setDivineMode(vegaPanel.isDivineMode());
+            vegaAgent.sendMessage(text, response ->
+                javafx.application.Platform.runLater(() -> {
+                    vegaPanel.setThinking(false);
+                    vegaPanel.addVegaMessage(response);
+                })
+            );
         });
 
         // Welcome message shown after the scene is fully laid out
