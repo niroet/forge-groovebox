@@ -971,13 +971,16 @@ public class ForgeApp extends Application {
 
     private HBox buildCenterPanels() {
         HBox center = new HBox(0);
+        center.setFillHeight(true);   // children stretch to fill HBox height
 
         // LEFT: Synth panel — border on right edge for visual separation
         synthPanel = new SynthPanel();
+        synthPanel.setMaxHeight(Double.MAX_VALUE);  // allow fill to HBox height
         synthPanel.setStyle(synthPanel.getStyle() + " -fx-border-color: transparent #1a1a1a transparent transparent; -fx-border-width: 0 1 0 0;");
 
         // CENTER: Visualizer placeholder + Drum panel
         VBox centerColumn = new VBox(0);
+        centerColumn.setMaxHeight(Double.MAX_VALUE);  // allow fill to HBox height
         centerColumn.setStyle("-fx-background-color: #0a0a0a;");
 
         // Visualizer panel (top portion)
@@ -996,14 +999,18 @@ public class ForgeApp extends Application {
         sep.setMaxHeight(1);
         sep.setStyle("-fx-background-color: #1a1a1a;");
 
-        // Drum panel (bottom portion)
+        // Drum panel (bottom portion) — fixed height so it doesn't push layout
         drumPanel = new DrumPanel();
+        drumPanel.setMinHeight(200);
+        drumPanel.setPrefHeight(230);
+        drumPanel.setMaxHeight(280);
 
         centerColumn.getChildren().addAll(visualizerPanel, synthGrid, sep, drumPanel);
         HBox.setHgrow(centerColumn, Priority.ALWAYS);
 
         // RIGHT: VEGA terminal panel — border on left edge for visual separation
         vegaPanel = new VegaPanel();
+        vegaPanel.setMaxHeight(Double.MAX_VALUE);  // allow fill to HBox height
         vegaPanel.setStyle(vegaPanel.getStyle() != null
             ? vegaPanel.getStyle() + " -fx-border-color: transparent transparent transparent #1a1a1a; -fx-border-width: 0 0 0 1;"
             : "-fx-border-color: transparent transparent transparent #1a1a1a; -fx-border-width: 0 0 0 1;");
