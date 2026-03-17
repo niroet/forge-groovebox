@@ -17,6 +17,8 @@ import com.forge.ui.panels.SynthPanel;
 import com.forge.ui.panels.SynthSequenceGrid;
 import com.forge.ui.theme.CrtOverlay;
 import com.forge.ui.theme.ForgeColors;
+import com.forge.ui.visualizer.VisualizerPanel;
+import com.forge.model.VisualizerMode;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -78,6 +80,7 @@ public class ForgeApp extends Application {
     private SynthPanel synthPanel;
     private DrumPanel drumPanel;
     private SynthSequenceGrid synthGrid;
+    private VisualizerPanel visualizerPanel;
 
     // ---- Step tracking ------------------------------------------------------
     private final AtomicInteger currentStep = new AtomicInteger(-1);
@@ -188,6 +191,9 @@ public class ForgeApp extends Application {
         if (stepAnimator != null) {
             stepAnimator.stop();
         }
+        if (visualizerPanel != null) {
+            visualizerPanel.stop();
+        }
         if (clock != null) {
             clock.stop();
         }
@@ -288,6 +294,9 @@ public class ForgeApp extends Application {
         drumPanel.wire(clock, sequencer);
         // Wire synth grid to the same pattern the drum panel uses
         synthGrid.setPattern(drumPanel.getActivePattern());
+        // Wire AnalysisBus to visualizer panel and start the animation timer
+        visualizerPanel.setAnalysisBus(audioEngine.getAnalysisBus());
+        visualizerPanel.start();
     }
 
     private void buildDefaultBeat() {
@@ -409,14 +418,14 @@ public class ForgeApp extends Application {
                 }
             }
 
-            // ---- F1-F6: visualizer mode (placeholder) -----------------------
+            // ---- F1-F6: visualizer mode switch ------------------------------
             switch (code) {
-                case F1 -> { System.out.println("[FORGE] vis mode: 1"); return; }
-                case F2 -> { System.out.println("[FORGE] vis mode: 2"); return; }
-                case F3 -> { System.out.println("[FORGE] vis mode: 3"); return; }
-                case F4 -> { System.out.println("[FORGE] vis mode: 4"); return; }
-                case F5 -> { System.out.println("[FORGE] vis mode: 5"); return; }
-                case F6 -> { System.out.println("[FORGE] vis mode: 6"); return; }
+                case F1 -> { visualizerPanel.setMode(VisualizerMode.SPECTRUM);     return; }
+                case F2 -> { visualizerPanel.setMode(VisualizerMode.OSCILLOSCOPE); return; }
+                case F3 -> { visualizerPanel.setMode(VisualizerMode.SPECTROGRAM);  return; }
+                case F4 -> { visualizerPanel.setMode(VisualizerMode.TERRAIN);      return; }
+                case F5 -> { visualizerPanel.setMode(VisualizerMode.PARTICLES);    return; }
+                case F6 -> { visualizerPanel.setMode(VisualizerMode.VEGA_EYE);     return; }
                 default -> { /* fall through */ }
             }
 
@@ -611,21 +620,14 @@ public class ForgeApp extends Application {
         VBox centerColumn = new VBox(0);
         centerColumn.setStyle("-fx-background-color: #0a0a0a;");
 
-        // Visualizer placeholder (top portion)
-        VBox visPlaceholder = new VBox();
-        visPlaceholder.setAlignment(Pos.CENTER);
-        visPlaceholder.setStyle("-fx-background-color: #0a0a0a; -fx-border-color: transparent transparent #1a1a1a transparent; -fx-border-width: 0 0 1 0;");
-        VBox.setVgrow(visPlaceholder, Priority.ALWAYS);
-
-        Label visLabel = new Label("VISUALIZER");
-        visLabel.setFont(Font.font("Monospace", FontWeight.NORMAL, 11));
-        visLabel.setTextFill(Color.web("#2a2a2a"));
-        visPlaceholder.getChildren().add(visLabel);
+        // Visualizer panel (top portion)
+        visualizerPanel = new VisualizerPanel();
+        VBox.setVgrow(visualizerPanel, Priority.ALWAYS);
 
         // Synth sequence grid (compact strip above drum panel)
         synthGrid = new SynthSequenceGrid();
-        // Deselect synth step when clicking elsewhere (drum/synth panels)
-        visPlaceholder.setOnMouseClicked(e -> synthGrid.clearSelection());
+        // Deselect synth step when clicking elsewhere
+        visualizerPanel.setOnMouseClicked(e -> synthGrid.clearSelection());
 
         // Separator line
         Region sep = new Region();
@@ -637,7 +639,7 @@ public class ForgeApp extends Application {
         // Drum panel (bottom portion)
         drumPanel = new DrumPanel();
 
-        centerColumn.getChildren().addAll(visPlaceholder, synthGrid, sep, drumPanel);
+        centerColumn.getChildren().addAll(visualizerPanel, synthGrid, sep, drumPanel);
         HBox.setHgrow(centerColumn, Priority.ALWAYS);
 
         // RIGHT: VEGA terminal placeholder

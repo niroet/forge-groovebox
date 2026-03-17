@@ -42,8 +42,9 @@ public final class AudioEngine {
     private final LineOut      lineOut;
 
     // ---- Shared data --------------------------------------------------------
-    private final AnalysisBus    analysisBus;
+    private final AnalysisBus     analysisBus;
     private final AudioRingBuffer ringBuffer;
+    private final AnalysisDriver  analysisDriver;
 
     // ---- State --------------------------------------------------------------
     private volatile boolean running;
@@ -64,8 +65,14 @@ public final class AudioEngine {
         masterMixer.output.connect(0, lineOut.input, 0);
         masterMixer.output.connect(0, lineOut.input, 1);
 
-        analysisBus = new AnalysisBus();
-        ringBuffer  = new AudioRingBuffer(BUFFER_SIZE * 8); // 8 blocks of headroom
+        analysisBus    = new AnalysisBus();
+        ringBuffer     = new AudioRingBuffer(BUFFER_SIZE * 8); // 8 blocks of headroom
+
+        // Analysis driver: taps the master mix and feeds the FftProcessor
+        analysisDriver = new AnalysisDriver(analysisBus);
+        synth.add(analysisDriver);
+        // Connect master mixer output channel 0 to the analysis input
+        masterMixer.output.connect(0, analysisDriver.input, 0);
     }
 
     // =========================================================================
@@ -81,6 +88,7 @@ public final class AudioEngine {
         if (running) throw new IllegalStateException("AudioEngine is already running");
         synth.start(SAMPLE_RATE);
         lineOut.start();
+        analysisDriver.start();
         running = true;
     }
 

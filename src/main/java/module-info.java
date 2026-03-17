@@ -23,4 +23,5 @@ module com.forge {
     exports com.forge.ui.theme;
     exports com.forge.ui.controls;
     exports com.forge.ui.panels;
+    exports com.forge.ui.visualizer;
 }
