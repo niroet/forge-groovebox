@@ -47,6 +47,7 @@ public class StepSequencer implements SequencerListener {
     public void setPattern(Pattern pattern) { this.currentPattern = pattern; }
     public void setFillActive(boolean active) { this.fillActive = active; }
     public void setTrackMuted(int track, boolean muted) { trackMuted[track] = muted; }
+    public boolean isSynthMuted() { return trackMuted[4]; }
     public int getLoopCount() { return loopCount; }
 
     // -------------------------------------------------------------------------

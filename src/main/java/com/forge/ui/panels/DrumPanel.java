@@ -364,6 +364,19 @@ public class DrumPanel extends VBox {
         return playing;
     }
 
+    /**
+     * Toggle mute on the given drum track (0-3).
+     * Called from keyboard shortcuts (Ctrl+1–4).
+     */
+    public void muteTrack(int trackIdx) {
+        if (trackIdx < 0 || trackIdx >= 4) return;
+        trackMuted[trackIdx] = !trackMuted[trackIdx];
+        updateMuteSolo(trackIdx);
+        if (sequencer != null) {
+            sequencer.setTrackMuted(trackIdx, trackMuted[trackIdx]);
+        }
+    }
+
     // =========================================================================
     // Pattern switching
     // =========================================================================

@@ -14,6 +14,7 @@ import com.forge.model.DrumTrack;
 import com.forge.model.SynthPatch;
 import com.forge.ui.panels.DrumPanel;
 import com.forge.ui.panels.SynthPanel;
+import com.forge.ui.panels.SynthSequenceGrid;
 import com.forge.ui.theme.CrtOverlay;
 import com.forge.ui.theme.ForgeColors;
 
@@ -76,6 +77,7 @@ public class ForgeApp extends Application {
     // ---- UI panels ----------------------------------------------------------
     private SynthPanel synthPanel;
     private DrumPanel drumPanel;
+    private SynthSequenceGrid synthGrid;
 
     // ---- Step tracking ------------------------------------------------------
     private final AtomicInteger currentStep = new AtomicInteger(-1);
@@ -284,6 +286,8 @@ public class ForgeApp extends Application {
     private void wireAudioToUI() {
         synthPanel.wire(synthVoices, globalPatch, effectsChain);
         drumPanel.wire(clock, sequencer);
+        // Wire synth grid to the same pattern the drum panel uses
+        synthGrid.setPattern(drumPanel.getActivePattern());
     }
 
     private void buildDefaultBeat() {
@@ -324,6 +328,7 @@ public class ForgeApp extends Application {
                 if (step != lastStep) {
                     lastStep = step;
                     drumPanel.setPlayingStep(step);
+                    synthGrid.setPlayingStep(step);
                 }
             }
         };
@@ -338,43 +343,110 @@ public class ForgeApp extends Application {
         scene.setOnKeyPressed(event -> {
             KeyCode code = event.getCode();
 
+            // Guard against key-repeat firing multiple allocations
             if (heldKeys.contains(code)) return;
             heldKeys.add(code);
 
+            // ---- Global transport -------------------------------------------
             if (code == KeyCode.SPACE) {
                 drumPanel.togglePlayStop();
                 return;
             }
 
+            // ---- F key: fill active (hold) ----------------------------------
+            if (code == KeyCode.F && !event.isControlDown()) {
+                sequencer.setFillActive(true);
+                System.out.println("[FORGE] fill: ON");
+                return;
+            }
+
+            // ---- Tab: toggle grid focus (placeholder) -----------------------
+            if (code == KeyCode.TAB) {
+                event.consume();   // prevent focus traversal
+                System.out.println("[FORGE] TAB: grid focus toggled");
+                return;
+            }
+
+            // ---- Octave shift -----------------------------------------------
             if (code == KeyCode.Q) {
                 releaseAllHeldNotes();
                 octaveShift -= 12;
+                System.out.println("[FORGE] octave: " + (octaveShift / 12));
                 return;
             }
             if (code == KeyCode.W) {
                 releaseAllHeldNotes();
                 octaveShift += 12;
+                System.out.println("[FORGE] octave: " + (octaveShift / 12));
                 return;
             }
 
-            // ASDF row
-            for (int i = 0; i < ASDF_KEYS.length; i++) {
-                if (code == ASDF_KEYS[i]) {
-                    int note = ASDF_NOTES[i] + octaveShift;
-                    activeKeyNotes.put(code, note);
-                    voiceAllocator.allocate(note, 0.8);
+            // ---- Ctrl+1-5: drum/synth mute ----------------------------------
+            if (event.isControlDown()) {
+                switch (code) {
+                    case DIGIT1 -> { drumPanel.muteTrack(0); return; }
+                    case DIGIT2 -> { drumPanel.muteTrack(1); return; }
+                    case DIGIT3 -> { drumPanel.muteTrack(2); return; }
+                    case DIGIT4 -> { drumPanel.muteTrack(3); return; }
+                    case DIGIT5 -> { sequencer.setTrackMuted(4, !sequencer.isSynthMuted()); return; }
+                    default -> { /* fall through */ }
+                }
+            }
+
+            // ---- 1-9: trigger section (placeholder) -------------------------
+            if (!event.isControlDown()) {
+                switch (code) {
+                    case DIGIT1 -> { System.out.println("[FORGE] section: 1"); return; }
+                    case DIGIT2 -> { System.out.println("[FORGE] section: 2"); return; }
+                    case DIGIT3 -> { System.out.println("[FORGE] section: 3"); return; }
+                    case DIGIT4 -> { System.out.println("[FORGE] section: 4"); return; }
+                    case DIGIT5 -> { System.out.println("[FORGE] section: 5"); return; }
+                    case DIGIT6 -> { System.out.println("[FORGE] section: 6"); return; }
+                    case DIGIT7 -> { System.out.println("[FORGE] section: 7"); return; }
+                    case DIGIT8 -> { System.out.println("[FORGE] section: 8"); return; }
+                    case DIGIT9 -> { System.out.println("[FORGE] section: 9"); return; }
+                    default -> { /* fall through */ }
+                }
+            }
+
+            // ---- F1-F6: visualizer mode (placeholder) -----------------------
+            switch (code) {
+                case F1 -> { System.out.println("[FORGE] vis mode: 1"); return; }
+                case F2 -> { System.out.println("[FORGE] vis mode: 2"); return; }
+                case F3 -> { System.out.println("[FORGE] vis mode: 3"); return; }
+                case F4 -> { System.out.println("[FORGE] vis mode: 4"); return; }
+                case F5 -> { System.out.println("[FORGE] vis mode: 5"); return; }
+                case F6 -> { System.out.println("[FORGE] vis mode: 6"); return; }
+                default -> { /* fall through */ }
+            }
+
+            // ---- Synth grid: arrow navigation + step editing ----------------
+            if (synthGrid != null && synthGrid.getSelectedStep() >= 0) {
+                if (code == KeyCode.LEFT) {
+                    synthGrid.moveSelection(-1);
+                    return;
+                }
+                if (code == KeyCode.RIGHT) {
+                    synthGrid.moveSelection(1);
+                    return;
+                }
+                if (code == KeyCode.DELETE || code == KeyCode.BACK_SPACE) {
+                    synthGrid.deleteSelectedStep();
+                    return;
+                }
+                // Note keys → step record
+                Integer stepNote = resolveNoteKey(code);
+                if (stepNote != null) {
+                    synthGrid.enterNote(stepNote);
                     return;
                 }
             }
 
-            // ZXCV row
-            for (int i = 0; i < ZXCV_KEYS.length; i++) {
-                if (code == ZXCV_KEYS[i]) {
-                    int note = ZXCV_NOTES[i] + octaveShift;
-                    activeKeyNotes.put(code, note);
-                    voiceAllocator.allocate(note, 0.8);
-                    return;
-                }
+            // ---- Live keyboard play -----------------------------------------
+            Integer liveNote = resolveNoteKey(code);
+            if (liveNote != null) {
+                activeKeyNotes.put(code, liveNote);
+                voiceAllocator.allocate(liveNote, 0.8);
             }
         });
 
@@ -382,11 +454,34 @@ public class ForgeApp extends Application {
             KeyCode code = event.getCode();
             heldKeys.remove(code);
 
+            // Fill key released
+            if (code == KeyCode.F && !event.isControlDown()) {
+                sequencer.setFillActive(false);
+                System.out.println("[FORGE] fill: OFF");
+                return;
+            }
+
+            // Release live note (only if not in step-record mode for that key)
             Integer note = activeKeyNotes.remove(code);
             if (note != null) {
                 voiceAllocator.releaseNote(note);
             }
         });
+    }
+
+    /**
+     * Map a key code to a MIDI note number using the two keyboard rows,
+     * respecting the current octave shift.  Returns null if the key is
+     * not a note key.
+     */
+    private Integer resolveNoteKey(KeyCode code) {
+        for (int i = 0; i < ASDF_KEYS.length; i++) {
+            if (code == ASDF_KEYS[i]) return ASDF_NOTES[i] + octaveShift;
+        }
+        for (int i = 0; i < ZXCV_KEYS.length; i++) {
+            if (code == ZXCV_KEYS[i]) return ZXCV_NOTES[i] + octaveShift;
+        }
+        return null;
     }
 
     private void releaseAllHeldNotes() {
@@ -527,10 +622,22 @@ public class ForgeApp extends Application {
         visLabel.setTextFill(Color.web("#2a2a2a"));
         visPlaceholder.getChildren().add(visLabel);
 
+        // Synth sequence grid (compact strip above drum panel)
+        synthGrid = new SynthSequenceGrid();
+        // Deselect synth step when clicking elsewhere (drum/synth panels)
+        visPlaceholder.setOnMouseClicked(e -> synthGrid.clearSelection());
+
+        // Separator line
+        Region sep = new Region();
+        sep.setPrefHeight(1);
+        sep.setMinHeight(1);
+        sep.setMaxHeight(1);
+        sep.setStyle("-fx-background-color: #1a1a1a;");
+
         // Drum panel (bottom portion)
         drumPanel = new DrumPanel();
 
-        centerColumn.getChildren().addAll(visPlaceholder, drumPanel);
+        centerColumn.getChildren().addAll(visPlaceholder, synthGrid, sep, drumPanel);
         HBox.setHgrow(centerColumn, Priority.ALWAYS);
 
         // RIGHT: VEGA terminal placeholder
