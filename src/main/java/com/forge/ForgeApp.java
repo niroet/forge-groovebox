@@ -15,6 +15,7 @@ import com.forge.model.SynthPatch;
 import com.forge.ui.panels.DrumPanel;
 import com.forge.ui.panels.SynthPanel;
 import com.forge.ui.panels.SynthSequenceGrid;
+import com.forge.ui.panels.VegaPanel;
 import com.forge.ui.theme.CrtOverlay;
 import com.forge.ui.theme.ForgeColors;
 import com.forge.ui.visualizer.VisualizerPanel;
@@ -81,6 +82,7 @@ public class ForgeApp extends Application {
     private DrumPanel drumPanel;
     private SynthSequenceGrid synthGrid;
     private VisualizerPanel visualizerPanel;
+    private VegaPanel vegaPanel;
 
     // ---- Step tracking ------------------------------------------------------
     private final AtomicInteger currentStep = new AtomicInteger(-1);
@@ -297,6 +299,36 @@ public class ForgeApp extends Application {
         // Wire AnalysisBus to visualizer panel and start the animation timer
         visualizerPanel.setAnalysisBus(audioEngine.getAnalysisBus());
         visualizerPanel.start();
+    }
+
+    private void wireVegaPanel() {
+        // Echo handler: show user message then echo a VEGA response
+        vegaPanel.setOnMessageSent(text -> {
+            vegaPanel.addSlayerMessage(text);
+            vegaPanel.clearInput();
+            vegaPanel.setThinking(true);
+
+            // Simulate brief processing delay, then echo
+            javafx.animation.PauseTransition pause =
+                new javafx.animation.PauseTransition(javafx.util.Duration.millis(400));
+            pause.setOnFinished(e -> {
+                vegaPanel.setThinking(false);
+                vegaPanel.addVegaMessage("Received: " + text);
+            });
+            pause.play();
+        });
+
+        // Welcome message shown after the scene is fully laid out
+        javafx.application.Platform.runLater(() ->
+            vegaPanel.addVegaMessage(
+                "Systems online. Audio engine initialized.\n" +
+                "\u251C\u2500 Synth: 8 voices, SUBTRACTIVE\n" +
+                "\u251C\u2500 Drums: 4 tracks, synthesis\n" +
+                "\u251C\u2500 Sequencer: 128 BPM\n" +
+                "\u2514\u2500 Effects: 6 modules ready\n" +
+                "\u26A1 Awaiting your command, Slayer."
+            )
+        );
     }
 
     private void buildDefaultBeat() {
@@ -642,8 +674,9 @@ public class ForgeApp extends Application {
         centerColumn.getChildren().addAll(visualizerPanel, synthGrid, sep, drumPanel);
         HBox.setHgrow(centerColumn, Priority.ALWAYS);
 
-        // RIGHT: VEGA terminal placeholder
-        VBox vegaPanel = buildPanel("VEGA TERMINAL", 220, -1, ForgeColors.VEGA_CYAN);
+        // RIGHT: VEGA terminal panel
+        vegaPanel = new VegaPanel();
+        wireVegaPanel();
 
         center.getChildren().addAll(synthPanel, centerColumn, vegaPanel);
         return center;
