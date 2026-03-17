@@ -1,5 +1,6 @@
 package com.forge.audio.engine;
 
+import com.forge.audio.effects.EffectsChain;
 import com.jsyn.JSyn;
 import com.jsyn.Synthesizer;
 import com.jsyn.unitgen.LineOut;
@@ -41,6 +42,9 @@ public final class AudioEngine {
     private final MixerMono   masterMixer;
     private final LineOut      lineOut;
 
+    // ---- Effects chain (inserted between mixer and lineOut) -----------------
+    private final EffectsChain effectsChain;
+
     // ---- Shared data --------------------------------------------------------
     private final AnalysisBus     analysisBus;
     private final AudioRingBuffer ringBuffer;
@@ -61,9 +65,12 @@ public final class AudioEngine {
         synth.add(masterMixer);
         synth.add(lineOut);
 
-        // Wire master mixer output into both channels of the stereo line-out.
-        masterMixer.output.connect(0, lineOut.input, 0);
-        masterMixer.output.connect(0, lineOut.input, 1);
+        // Create effects chain and wire it between mixer and lineOut:
+        //   masterMixer.output → EffectsChain.input → EffectsChain.output → lineOut.input
+        effectsChain = new EffectsChain(synth);
+        masterMixer.output.connect(0, effectsChain.getInput(), 0);
+        effectsChain.getOutput().connect(0, lineOut.input, 0);
+        effectsChain.getOutput().connect(0, lineOut.input, 1);
 
         analysisBus    = new AnalysisBus();
         ringBuffer     = new AudioRingBuffer(BUFFER_SIZE * 8); // 8 blocks of headroom
@@ -146,5 +153,12 @@ public final class AudioEngine {
      */
     public AudioRingBuffer getRingBuffer() {
         return ringBuffer;
+    }
+
+    /**
+     * @return the {@link EffectsChain} wired between the master mixer and the line-out
+     */
+    public EffectsChain getEffectsChain() {
+        return effectsChain;
     }
 }

@@ -348,9 +348,9 @@ public class ForgeApp extends Application {
         audioEngine.getSynth().add(clockDriver);
         clockDriver.start();
 
-        // Effects chain -- skip wiring into signal path for now (mixer -> lineOut direct)
-        // Effects chain is created for UI control but not inserted into audio path
-        effectsChain = new EffectsChain(audioEngine.getSynth());
+        // Effects chain — owned by AudioEngine, wired into the signal path:
+        //   masterMixer → effectsChain → lineOut
+        effectsChain = audioEngine.getEffectsChain();
 
         // VEGA AI agent — receives the live audio components and project state
         projectState.bpm = 128.0;
@@ -972,8 +972,9 @@ public class ForgeApp extends Application {
     private HBox buildCenterPanels() {
         HBox center = new HBox(0);
 
-        // LEFT: Synth panel
+        // LEFT: Synth panel — border on right edge for visual separation
         synthPanel = new SynthPanel();
+        synthPanel.setStyle(synthPanel.getStyle() + " -fx-border-color: transparent #1a1a1a transparent transparent; -fx-border-width: 0 1 0 0;");
 
         // CENTER: Visualizer placeholder + Drum panel
         VBox centerColumn = new VBox(0);
@@ -1001,9 +1002,16 @@ public class ForgeApp extends Application {
         centerColumn.getChildren().addAll(visualizerPanel, synthGrid, sep, drumPanel);
         HBox.setHgrow(centerColumn, Priority.ALWAYS);
 
-        // RIGHT: VEGA terminal panel
+        // RIGHT: VEGA terminal panel — border on left edge for visual separation
         vegaPanel = new VegaPanel();
+        vegaPanel.setStyle(vegaPanel.getStyle() != null
+            ? vegaPanel.getStyle() + " -fx-border-color: transparent transparent transparent #1a1a1a; -fx-border-width: 0 0 0 1;"
+            : "-fx-border-color: transparent transparent transparent #1a1a1a; -fx-border-width: 0 0 0 1;");
         wireVegaPanel();
+
+        // Enable caching on static panel headers/labels for GPU performance
+        synthPanel.setCache(true);
+        synthPanel.setCacheHint(javafx.scene.CacheHint.SPEED);
 
         center.getChildren().addAll(synthPanel, centerColumn, vegaPanel);
         return center;

@@ -8,11 +8,15 @@ import com.forge.model.Pattern;
 import com.forge.ui.controls.StepButton;
 import com.forge.ui.theme.ForgeColors;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -21,6 +25,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.util.Duration;
 
 /**
  * Drum step-sequencer grid + transport bar.
@@ -51,6 +56,9 @@ public class DrumPanel extends VBox {
     private TextField bpmField;
     private volatile boolean playing = false;
     private int currentPlayingStep = -1;
+
+    // ---- Play button glow animation -----------------------------------------
+    private Timeline playPulseTimeline;
 
     // ---- Mute/Solo state ----------------------------------------------------
     private final boolean[] trackMuted = new boolean[4];
@@ -115,6 +123,7 @@ public class DrumPanel extends VBox {
     /**
      * Highlight the given step column. Call from the JavaFX thread.
      * Pass -1 to clear all highlights.
+     * Active steps get a brief scale-up animation (1.0 -> 1.15 -> 1.0) for tactile feedback.
      */
     public void setPlayingStep(int step) {
         if (step == currentPlayingStep) return;
@@ -124,6 +133,8 @@ public class DrumPanel extends VBox {
             for (int t = 0; t < 4; t++) {
                 StepButton btn = stepButtons[t][currentPlayingStep];
                 btn.setState(btn.isActive() ? StepButton.ButtonState.ON : StepButton.ButtonState.OFF);
+                btn.setScaleX(1.0);
+                btn.setScaleY(1.0);
             }
         }
 
@@ -135,6 +146,19 @@ public class DrumPanel extends VBox {
                 StepButton btn = stepButtons[t][step];
                 if (btn.isActive()) {
                     btn.setState(StepButton.ButtonState.PLAYING);
+                    // Brief scale-up animation for tactile feedback
+                    Timeline pop = new Timeline(
+                        new KeyFrame(Duration.ZERO,
+                            new KeyValue(btn.scaleXProperty(), 1.0),
+                            new KeyValue(btn.scaleYProperty(), 1.0)),
+                        new KeyFrame(Duration.millis(50),
+                            new KeyValue(btn.scaleXProperty(), 1.15),
+                            new KeyValue(btn.scaleYProperty(), 1.15)),
+                        new KeyFrame(Duration.millis(100),
+                            new KeyValue(btn.scaleXProperty(), 1.0),
+                            new KeyValue(btn.scaleYProperty(), 1.0))
+                    );
+                    pop.play();
                 }
             }
         }
@@ -343,6 +367,23 @@ public class DrumPanel extends VBox {
         playBtn.setStyle("-fx-cursor: hand; -fx-background-color: #220000; -fx-border-color: " +
             ForgeColors.hex(ForgeColors.ARGENT_RED) +
             "; -fx-border-width: 1; -fx-background-radius: 3; -fx-border-radius: 3;");
+
+        // Start pulsing glow animation on RIP button
+        if (playPulseTimeline != null) playPulseTimeline.stop();
+        DropShadow pulseGlow = new DropShadow();
+        pulseGlow.setColor(Color.web("#ff2200"));
+        pulseGlow.setRadius(4);
+        playBtn.setEffect(pulseGlow);
+        playPulseTimeline = new Timeline(
+            new KeyFrame(Duration.ZERO,
+                new KeyValue(pulseGlow.radiusProperty(), 4)),
+            new KeyFrame(Duration.millis(500),
+                new KeyValue(pulseGlow.radiusProperty(), 12)),
+            new KeyFrame(Duration.millis(1000),
+                new KeyValue(pulseGlow.radiusProperty(), 4))
+        );
+        playPulseTimeline.setCycleCount(Timeline.INDEFINITE);
+        playPulseTimeline.play();
     }
 
     public void stopPlayback() {
@@ -353,6 +394,13 @@ public class DrumPanel extends VBox {
         playBtn.setTextFill(Color.web("#aaaaaa"));
         playBtn.setStyle("-fx-cursor: hand; -fx-background-color: #1a1a1a; -fx-border-color: #333333; " +
             "-fx-border-width: 1; -fx-background-radius: 3; -fx-border-radius: 3;");
+
+        // Stop pulse animation
+        if (playPulseTimeline != null) {
+            playPulseTimeline.stop();
+            playPulseTimeline = null;
+        }
+        playBtn.setEffect(null);
     }
 
     public void togglePlayStop() {

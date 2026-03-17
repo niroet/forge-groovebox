@@ -39,6 +39,11 @@ public final class VisualizerPanel extends VBox {
         "F1:SPECTRUM", "F2:SCOPE", "F3:SPECTRO", "F4:TERRAIN", "F5:PARTICLES", "F6:VEGA EYE"
     };
 
+    // ---- Frame throttle for heavier modes (30fps cap) -------------------------
+    /** Minimum nanoseconds between frames for heavy modes (particles, terrain). */
+    private static final long HEAVY_FRAME_NS = 33_333_333L; // ~30fps
+    private long lastRenderNs = 0;
+
     // ---- State --------------------------------------------------------------
     private final Canvas            canvas;
     private       VisualizerRenderer activeRenderer;
@@ -78,11 +83,14 @@ public final class VisualizerPanel extends VBox {
         // Default renderer
         activeRenderer = createRenderer(currentMode);
 
-        // Animation timer
+        // Animation timer with frame-rate throttling for heavier modes
         timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 if (analysisBus == null) return;
+                // Throttle heavy modes (terrain, particles) to ~30fps for integrated GPUs
+                if (isHeavyMode() && (now - lastRenderNs) < HEAVY_FRAME_NS) return;
+                lastRenderNs = now;
                 double w = canvas.getWidth();
                 double h = canvas.getHeight();
                 if (w < 1 || h < 1) return;
@@ -204,6 +212,12 @@ public final class VisualizerPanel extends VBox {
         if (w > 0 && h > 0 && activeRenderer != null) {
             activeRenderer.init(w, h);
         }
+    }
+
+    /** Whether the current mode is GPU-heavy and should be throttled to ~30fps. */
+    private boolean isHeavyMode() {
+        return currentMode == VisualizerMode.TERRAIN
+            || currentMode == VisualizerMode.PARTICLES;
     }
 
     private static VisualizerRenderer createRenderer(VisualizerMode mode) {

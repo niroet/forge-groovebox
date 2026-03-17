@@ -106,6 +106,17 @@ public class ForgeKnob extends VBox {
             double newNorm = clamp(dragStartValue + delta * speed, 0.0, 1.0);
             value.set(minValue.get() + newNorm * (maxValue.get() - minValue.get()));
         });
+
+        // Prominent glow on hover
+        canvas.setOnMouseEntered(e -> {
+            DropShadow hoverGlow = new DropShadow();
+            hoverGlow.setColor(Color.color(accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue(), 0.8));
+            hoverGlow.setRadius(14);
+            hoverGlow.setSpread(0.3);
+            canvas.setEffect(hoverGlow);
+        });
+
+        canvas.setOnMouseExited(e -> draw());
     }
 
     // ---- Drawing -----------------------------------------------------------

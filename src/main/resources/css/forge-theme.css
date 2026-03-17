@@ -9,7 +9,7 @@
     -fx-background: #080808;
     -fx-control-inner-background: #0a0a0a;
     -fx-background-color: #080808;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-font-size: 12px;
     -fx-text-fill: #cccccc;
 }
@@ -17,7 +17,7 @@
 /* --- Labels --------------------------------------------------------------- */
 .label {
     -fx-text-fill: #888888;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
 }
 
 /* --- Buttons (Win98 beveled dark) ---------------------------------------- */
@@ -27,7 +27,7 @@
     -fx-border-color: #555555 #1a1a1a #1a1a1a #555555;
     -fx-border-width: 1px;
     -fx-text-fill: #cccccc;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-cursor: hand;
     -fx-padding: 2px 8px;
 }
@@ -58,7 +58,7 @@
     -fx-border-color: #555555 #1a1a1a #1a1a1a #555555;
     -fx-border-width: 1px;
     -fx-text-fill: #cccccc;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-font-size: 10px;
     -fx-cursor: hand;
     -fx-padding: 0px 5px;
@@ -84,7 +84,7 @@
     -fx-border-color: #333333;
     -fx-border-width: 1px;
     -fx-text-fill: #cccccc;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-prompt-text-fill: #444444;
 }
 
@@ -101,14 +101,14 @@
     -fx-border-color: #333333;
     -fx-border-width: 1px;
     -fx-text-fill: #ff8800;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
 }
 
 .combo-box .list-cell,
 .combo-box-popup .list-view .list-cell {
     -fx-background-color: #0a0a0a;
     -fx-text-fill: #ff8800;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
 }
 
 .combo-box-popup .list-view .list-cell:hover {
@@ -133,16 +133,20 @@
 /* --- ScrollBars ----------------------------------------------------------- */
 .scroll-bar {
     -fx-background-color: #080808;
+    -fx-pref-width: 8px;
+    -fx-pref-height: 8px;
 }
 
 .scroll-bar .track {
     -fx-background-color: #0a0a0a;
-    -fx-border-color: #222222;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4;
 }
 
 .scroll-bar .thumb {
     -fx-background-color: #2a2a2a;
-    -fx-border-color: #444444;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4;
 }
 
 .scroll-bar .thumb:hover {
@@ -151,13 +155,18 @@
 
 .scroll-bar .increment-button,
 .scroll-bar .decrement-button {
-    -fx-background-color: #1a1a1a;
-    -fx-border-color: #333333;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
 }
 
 .scroll-bar .increment-arrow,
 .scroll-bar .decrement-arrow {
-    -fx-background-color: #666666;
+    -fx-background-color: transparent;
+    -fx-shape: "";
+    -fx-padding: 0;
 }
 
 /* --- Separator ------------------------------------------------------------ */
@@ -168,7 +177,7 @@
 /* --- Menu bar area labels ------------------------------------------------- */
 .menu-label {
     -fx-text-fill: #aaaaaa;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-font-size: 11px;
     -fx-cursor: hand;
     -fx-padding: 2px 8px;
@@ -182,13 +191,13 @@
 /* --- Panel containers ----------------------------------------------------- */
 .forge-panel {
     -fx-background-color: #0a0a0a;
-    -fx-border-color: #222222;
-    -fx-border-width: 1px;
+    -fx-border-color: #1a1a1a;
+    -fx-border-width: 0 1 0 1;
 }
 
 .forge-panel-title {
     -fx-text-fill: #444444;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-font-size: 11px;
     -fx-letter-spacing: 2px;
 }
@@ -202,13 +211,13 @@
 
 .status-text {
     -fx-text-fill: #666666;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-font-size: 11px;
 }
 
 .status-text-active {
     -fx-text-fill: #ff6600;
-    -fx-font-family: "Monospace";
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
     -fx-font-size: 11px;
 }
 
@@ -226,4 +235,30 @@
 .slider .thumb:hover {
     -fx-background-color: #ffcc00;
     -fx-effect: dropshadow(gaussian, #ff8800, 6, 0.4, 0, 0);
+}
+
+/* --- Context menu / popup menu -------------------------------------------- */
+.context-menu {
+    -fx-background-color: #0a0a0a;
+    -fx-border-color: #333333;
+    -fx-border-width: 1;
+}
+
+.menu-item {
+    -fx-background-color: transparent;
+}
+
+.menu-item .label {
+    -fx-text-fill: #aaaaaa;
+    -fx-font-family: "JetBrains Mono", "Fira Code", "Consolas", "Monospace";
+}
+
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: #1a0800;
+}
+
+.menu-item:hover .label,
+.menu-item:focused .label {
+    -fx-text-fill: #ff8800;
 }

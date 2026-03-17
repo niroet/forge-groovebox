@@ -1,5 +1,6 @@
 package com.forge.ui.theme;
 
+import javafx.scene.CacheHint;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Pane;
@@ -23,6 +24,10 @@ public class CrtOverlay extends Pane {
         canvas = new Canvas();
         setMouseTransparent(true);
         setPickOnBounds(false);
+
+        // Cache the overlay — it only redraws on resize, not per-frame
+        setCache(true);
+        setCacheHint(CacheHint.SPEED);
 
         getChildren().add(canvas);
 
@@ -63,12 +68,12 @@ public class CrtOverlay extends Pane {
         drawVignette(gc, w, h);
     }
 
-    /** Horizontal semi-transparent lines every 2px — classic CRT scanline look. */
+    /** Horizontal semi-transparent lines every 2px — classic CRT scanline look.
+     *  Uses fillRect instead of strokeLine for better GPU batching. */
     private void drawScanlines(GraphicsContext gc, double w, double h) {
-        gc.setStroke(Color.rgb(0, 0, 0, 0.18));
-        gc.setLineWidth(1.0);
+        gc.setFill(Color.rgb(0, 0, 0, 0.18));
         for (double y = 0; y < h; y += 2) {
-            gc.strokeLine(0, y, w, y);
+            gc.fillRect(0, y, w, 1.0);
         }
     }
 
