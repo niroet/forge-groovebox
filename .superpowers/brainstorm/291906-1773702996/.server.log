@@ -1,0 +1,3 @@
+{"type":"server-started","port":55445,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:55445","screen_dir":"/home/nick/DEV/random/prog2/.superpowers/brainstorm/291906-1773702996"}
+{"type":"screen-added","file":"/home/nick/DEV/random/prog2/.superpowers/brainstorm/291906-1773702996/spec-overview.html"}
+{"type":"server-stopped","reason":"idle timeout"}

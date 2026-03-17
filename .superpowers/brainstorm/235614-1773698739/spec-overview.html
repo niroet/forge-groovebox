@@ -1,0 +1,310 @@
+<h2>FORGE — Complete Spec Overview</h2>
+<p class="subtitle">Everything we're building, at a glance</p>
+
+<!-- App header mockup -->
+<div style="background:#080808; border:2px solid #ff440044; border-radius:4px; overflow:hidden; margin-bottom:20px; position:relative;">
+  <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:10;"></div>
+
+  <div style="background:linear-gradient(to right, #1a0000, #330000, #1a0000); padding:6px 10px; font-family:monospace; color:white; font-size:13px; border-bottom:1px solid #ff4400; display:flex; align-items:center; gap:8px;">
+    <span style="color:#ff4400; font-size:16px; filter:drop-shadow(0 0 4px #ff4400);">⬡</span>
+    <span style="text-shadow:0 0 4px #ff4400; font-weight:bold;">FORGE.EXE</span>
+    <span style="font-size:10px; color:#ff440066;">UAC SOUND TERMINAL v2.016</span>
+  </div>
+
+  <div style="padding:16px; font-family:monospace;">
+
+    <!-- Architecture -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ ARCHITECTURE</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:8px 12px; flex:1; min-width:120px;">
+          <div style="color:#ff8800; font-size:10px; margin-bottom:4px;">Language</div>
+          <div style="color:#ffcc00; font-size:12px;">Java 21+</div>
+          <div style="color:#ff880066; font-size:8px; margin-top:2px;">Virtual threads, ZGC</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:8px 12px; flex:1; min-width:120px;">
+          <div style="color:#ff8800; font-size:10px; margin-bottom:4px;">UI</div>
+          <div style="color:#ffcc00; font-size:12px;">JavaFX 21</div>
+          <div style="color:#ff880066; font-size:8px; margin-top:2px;">Canvas, 3D, Controls</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:8px 12px; flex:1; min-width:120px;">
+          <div style="color:#ff8800; font-size:10px; margin-bottom:4px;">Synth Engine</div>
+          <div style="color:#ffcc00; font-size:12px;">JSyn</div>
+          <div style="color:#ff880066; font-size:8px; margin-top:2px;">Unit generators, RT safe</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #44bbff33; padding:8px 12px; flex:1; min-width:120px;">
+          <div style="color:#44bbff; font-size:10px; margin-bottom:4px;">AI Brain</div>
+          <div style="color:#88ccee; font-size:12px;">LangChain4j</div>
+          <div style="color:#44bbff66; font-size:8px; margin-top:2px;">Claude Haiku + Sonnet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thread Model -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ THREAD MODEL</div>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <div style="background:#ff220015; border:1px solid #ff2200; padding:6px 10px; text-align:center;">
+          <div style="color:#ff4400; font-size:10px; font-weight:bold;">AUDIO</div>
+          <div style="color:#ff880066; font-size:8px;">JSyn-managed</div>
+          <div style="color:#ff880044; font-size:7px;">Zero alloc, no GC</div>
+        </div>
+        <div style="color:#ff440044; font-size:16px;">→</div>
+        <div style="background:#ff440008; border:1px solid #ff440044; padding:4px 6px; font-size:8px; color:#ff8800;">Ring Buffer<br/>(lock-free)</div>
+        <div style="color:#ff440044; font-size:16px;">→</div>
+        <div style="background:#ff880015; border:1px solid #ff8800; padding:6px 10px; text-align:center;">
+          <div style="color:#ff8800; font-size:10px; font-weight:bold;">UI</div>
+          <div style="color:#ff880066; font-size:8px;">JavaFX thread</div>
+          <div style="color:#ff880044; font-size:7px;">60fps render</div>
+        </div>
+        <div style="color:#44bbff44; font-size:16px; margin-left:12px;">⬡</div>
+        <div style="background:#44bbff15; border:1px solid #44bbff; padding:6px 10px; text-align:center;">
+          <div style="color:#44bbff; font-size:10px; font-weight:bold;">VEGA</div>
+          <div style="color:#44bbff66; font-size:8px;">Virtual threads</div>
+          <div style="color:#44bbff44; font-size:7px;">Async, non-blocking</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Synth Engines -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ SYNTH — 4 ENGINES × 8 VOICES</div>
+      <div style="display:flex; gap:6px;">
+        <div style="flex:1; background:#ff220015; border:1px solid #ff2200; border-top:2px solid #ff4400; padding:8px; text-align:center;">
+          <div style="color:#ff4400; font-size:11px; font-weight:bold;">SUBTRACTIVE</div>
+          <div style="color:#ff880066; font-size:8px; margin-top:4px;">2 OSC → Filter → Env</div>
+          <div style="color:#ff880044; font-size:7px; margin-top:2px;">Saw, Square, Pulse, Tri, Sin</div>
+          <div style="color:#ff880044; font-size:7px;">Moog 24dB/oct ladder</div>
+        </div>
+        <div style="flex:1; background:#ff660015; border:1px solid #ff6600; border-top:2px solid #ff8800; padding:8px; text-align:center;">
+          <div style="color:#ff8800; font-size:11px; font-weight:bold;">FM</div>
+          <div style="color:#ff880066; font-size:8px; margin-top:4px;">Carrier + Modulator</div>
+          <div style="color:#ff880044; font-size:7px; margin-top:2px;">Ratio, Depth, Feedback</div>
+          <div style="color:#ff880044; font-size:7px;">Bells, E.Piano, Metal</div>
+        </div>
+        <div style="flex:1; background:#ff880015; border:1px solid #ff8800; border-top:2px solid #ffcc00; padding:8px; text-align:center;">
+          <div style="color:#ffcc00; font-size:11px; font-weight:bold;">WAVETABLE</div>
+          <div style="color:#ff880066; font-size:8px; margin-top:4px;">Table reader + morph</div>
+          <div style="color:#ff880044; font-size:7px; margin-top:2px;">Pre-built tables shipped</div>
+          <div style="color:#ff880044; font-size:7px;">Linear/cubic interp</div>
+        </div>
+        <div style="flex:1; background:#44bbff10; border:1px solid #44bbff44; border-top:2px solid #44bbff; padding:8px; text-align:center;">
+          <div style="color:#44bbff; font-size:11px; font-weight:bold;">GRANULAR</div>
+          <div style="color:#44bbff66; font-size:8px; margin-top:4px;">64 grains, scatter</div>
+          <div style="color:#44bbff44; font-size:7px; margin-top:2px;">FREEZE captures 2s</div>
+          <div style="color:#44bbff44; font-size:7px;">Position, pitch, pan</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drum Machine -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ DRUM SYNTH — 909-STYLE, 4 TRACKS</div>
+      <div style="display:flex; gap:6px;">
+        <div style="flex:1; background:#ff220015; border:1px solid #ff220044; padding:6px; text-align:center;">
+          <div style="color:#ff4400; font-size:10px; font-weight:bold;">KICK</div>
+          <div style="color:#ff880055; font-size:7px; margin-top:2px;">Sine + pitch env</div>
+          <div style="color:#ff880044; font-size:7px;">Click, decay, drive</div>
+        </div>
+        <div style="flex:1; background:#ff880015; border:1px solid #ff880044; padding:6px; text-align:center;">
+          <div style="color:#ff8800; font-size:10px; font-weight:bold;">SNARE</div>
+          <div style="color:#ff880055; font-size:7px; margin-top:2px;">Sine body + noise</div>
+          <div style="color:#ff880044; font-size:7px;">Tone, snap, color</div>
+        </div>
+        <div style="flex:1; background:#ffcc0015; border:1px solid #ffcc0044; padding:6px; text-align:center;">
+          <div style="color:#ffcc00; font-size:10px; font-weight:bold;">HAT</div>
+          <div style="color:#ff880055; font-size:7px; margin-top:2px;">6 detuned squares</div>
+          <div style="color:#ff880044; font-size:7px;">HP filter, open/close</div>
+        </div>
+        <div style="flex:1; background:#ff660015; border:1px solid #ff660044; padding:6px; text-align:center;">
+          <div style="color:#ff6600; font-size:10px; font-weight:bold;">PERC</div>
+          <div style="color:#ff880055; font-size:7px; margin-top:2px;">Flexible tri/sine</div>
+          <div style="color:#ff880044; font-size:7px;">Toms, rim, cowbell</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sequencer Features -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ SEQUENCER — ELEKTRON-INSPIRED</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">16/32/64 Steps</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">P-Locks ⚡</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Conditional Triggers</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Fill Button</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">16 Patterns (A-P)</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Swing 50-75%</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Note Repeat</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Step + Live Record</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Polymetric</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Control All</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FX Chain -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ EFFECTS CHAIN</div>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <div style="background:#ff220015; border:1px solid #ff2200; padding:6px 10px; text-align:center;">
+          <div style="color:#ff4400; font-size:9px;">DIST</div>
+          <div style="color:#ff880044; font-size:7px;">tanh clip</div>
+        </div>
+        <div style="color:#ff440033;">→</div>
+        <div style="background:#ff660015; border:1px solid #ff6600; padding:6px 10px; text-align:center;">
+          <div style="color:#ff6600; font-size:9px;">DELAY</div>
+          <div style="color:#ff880044; font-size:7px;">ping-pong</div>
+        </div>
+        <div style="color:#ff440033;">→</div>
+        <div style="background:#ff880015; border:1px solid #ff8800; padding:6px 10px; text-align:center;">
+          <div style="color:#ff8800; font-size:9px;">REVERB</div>
+          <div style="color:#ff880044; font-size:7px;">Freeverb</div>
+        </div>
+        <div style="color:#ff440033;">→</div>
+        <div style="background:#ffcc0010; border:1px solid #ffcc0044; padding:6px 10px; text-align:center;">
+          <div style="color:#ffcc00; font-size:9px;">CHORUS</div>
+          <div style="color:#ff880044; font-size:7px;">2x mod delay</div>
+        </div>
+        <div style="color:#ff440033;">→</div>
+        <div style="background:#0a0a0a; border:1px solid #444; padding:6px 10px; text-align:center;">
+          <div style="color:#aaa; font-size:9px;">COMP</div>
+          <div style="color:#66666644; font-size:7px;">feedforward</div>
+        </div>
+        <div style="color:#ff440033;">→</div>
+        <div style="background:#0a0a0a; border:1px solid #444; padding:6px 10px; text-align:center;">
+          <div style="color:#aaa; font-size:9px;">EQ</div>
+          <div style="color:#66666644; font-size:7px;">3-band para</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VEGA -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#44bbff; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(68,187,255,0.5);">◇ V.E.G.A — VIRTUAL ENHANCED GROOVE ASSISTANT</div>
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1; background:#44bbff10; border:1px solid #44bbff44; padding:10px; text-align:center;">
+          <div style="color:#44bbff; font-size:12px; font-weight:bold;">ASSIST</div>
+          <div style="color:#44bbff66; font-size:9px; margin-top:4px;">Claude Haiku</div>
+          <div style="color:#44bbff44; font-size:8px; margin-top:4px;">Quick tweaks, parameter changes, simple beats. &lt;2s response. Calm UAC AI persona.</div>
+          <div style="color:#44bbff33; font-size:8px; margin-top:6px;">18 tools: synth, drums, session, FX, viz</div>
+        </div>
+        <div style="flex:1; background:#ffdd4410; border:1px solid #ffdd4444; padding:10px; text-align:center;">
+          <div style="color:#ffdd44; font-size:12px; font-weight:bold;">DIVINE</div>
+          <div style="color:#ffdd4466; font-size:9px; margin-top:4px;">Claude Sonnet</div>
+          <div style="color:#ffdd4444; font-size:8px; margin-top:4px;">Full arrangements, music theory, complex patches, creative direction. The Father persona.</div>
+          <div style="color:#ffdd4433; font-size:8px; margin-top:6px;">Same tools + deeper reasoning</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visualizers -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ 6 VISUALIZER MODES</div>
+      <div style="display:flex; gap:4px; flex-wrap:wrap;">
+        <div style="background:#ff220015; border:1px solid #ff220044; padding:6px 12px;">
+          <div style="color:#ff4400; font-size:9px;">F1: Spectrum</div>
+        </div>
+        <div style="background:#ff440015; border:1px solid #ff440044; padding:6px 12px;">
+          <div style="color:#ff6600; font-size:9px;">F2: Oscilloscope</div>
+        </div>
+        <div style="background:#ff660015; border:1px solid #ff660044; padding:6px 12px;">
+          <div style="color:#ff8800; font-size:9px;">F3: Spectrogram</div>
+        </div>
+        <div style="background:#ff880015; border:1px solid #ff880044; padding:6px 12px;">
+          <div style="color:#ffcc00; font-size:9px;">F4: 3D Terrain</div>
+        </div>
+        <div style="background:#ff440015; border:1px solid #ff440044; padding:6px 12px;">
+          <div style="color:#ff4400; font-size:9px;">F5: Particles</div>
+        </div>
+        <div style="background:#44bbff10; border:1px solid #44bbff44; padding:6px 12px;">
+          <div style="color:#44bbff; font-size:9px;">F6: VEGA Eye</div>
+        </div>
+      </div>
+      <div style="color:#ff880044; font-size:8px; margin-top:4px;">Dual beat source: sequencer clock (timing) + audio analysis (intensity)</div>
+    </div>
+
+    <!-- Live Performance -->
+    <div style="margin-bottom:16px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ LIVE PERFORMANCE</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Section Triggers (1-9)</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Bar-Quantized Switch</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Instant Cut Mode</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Auto-Fill (4 types)</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">Track Mute/Solo</div>
+        </div>
+        <div style="background:#0a0a0a; border:1px solid #ff440033; padding:6px 10px;">
+          <div style="color:#ff8800; font-size:9px;">VEGA Section Cmds</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- I/O -->
+    <div style="margin-bottom:8px;">
+      <div style="color:#ff4400; font-size:11px; letter-spacing:3px; margin-bottom:8px; text-shadow:0 0 4px rgba(255,68,0,0.5);">◆ INPUT / OUTPUT</div>
+      <div style="display:flex; gap:12px;">
+        <div>
+          <div style="color:#ff880066; font-size:8px; margin-bottom:4px;">INPUT</div>
+          <div style="display:flex; gap:4px;">
+            <div style="background:#0a0a0a; border:1px solid #ff440033; padding:4px 8px; font-size:8px; color:#ff8800;">Keyboard Piano</div>
+            <div style="background:#0a0a0a; border:1px solid #ff440033; padding:4px 8px; font-size:8px; color:#ff8800;">MIDI Controllers</div>
+            <div style="background:#0a0a0a; border:1px solid #ff440033; padding:4px 8px; font-size:8px; color:#ff8800;">MIDI Auto-Learn</div>
+          </div>
+        </div>
+        <div>
+          <div style="color:#ff880066; font-size:8px; margin-bottom:4px;">OUTPUT</div>
+          <div style="display:flex; gap:4px;">
+            <div style="background:#0a0a0a; border:1px solid #ff440033; padding:4px 8px; font-size:8px; color:#ff8800;">WAV Render</div>
+            <div style="background:#0a0a0a; border:1px solid #ff440033; padding:4px 8px; font-size:8px; color:#ff8800;">MIDI Export</div>
+            <div style="background:#0a0a0a; border:1px solid #ff440033; padding:4px 8px; font-size:8px; color:#ff8800;">.forge Projects</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Status bar -->
+  <div style="background:#111; border-top:1px solid #2a2a2a; padding:3px 8px; font-family:monospace; font-size:9px; color:#666; display:flex; justify-content:space-between;">
+    <span style="color:#00ff44;">● SPEC: APPROVED</span>
+    <span>
+      <span style="color:#ff4400;">~570 lines</span>
+      <span style="color:#333;">│</span>
+      <span style="color:#ff8800;">7 systems</span>
+      <span style="color:#333;">│</span>
+      <span style="color:#ffcc00;">18 VEGA tools</span>
+      <span style="color:#333;">│</span>
+      <span style="color:#44bbff;">Pure Java</span>
+    </span>
+  </div>
+</div>
+
+<p class="subtitle">Full spec: <code>docs/superpowers/specs/2026-03-17-forge-groovebox-design.md</code></p>
