@@ -3,6 +3,8 @@ package com.forge;
 import com.forge.audio.drums.DrumEngine;
 import com.forge.audio.effects.EffectsChain;
 import com.forge.audio.engine.AudioEngine;
+import com.forge.audio.export.MidiExporter;
+import com.forge.audio.export.WavExporter;
 import com.forge.audio.sequencer.SectionManager;
 import com.forge.audio.sequencer.SequencerClock;
 import com.forge.audio.sequencer.SequencerListener;
@@ -10,10 +12,13 @@ import com.forge.audio.sequencer.StepSequencer;
 import com.forge.audio.synth.SubtractiveSynthVoice;
 import com.forge.audio.synth.SynthVoice;
 import com.forge.audio.synth.VoiceAllocator;
+import com.forge.midi.MidiInputHandler;
 import com.forge.model.DrumPatch;
 import com.forge.model.DrumTrack;
+import com.forge.model.ProjectPersistence;
 import com.forge.model.ProjectState;
 import com.forge.model.SynthPatch;
+import com.forge.model.UndoManager;
 import com.forge.ui.panels.DrumPanel;
 import com.forge.ui.panels.SynthPanel;
 import com.forge.ui.panels.SynthSequenceGrid;
@@ -30,6 +35,7 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
@@ -42,8 +48,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -83,6 +91,15 @@ public class ForgeApp extends Application {
 
     // ---- Project model ------------------------------------------------------
     private ProjectState projectState;
+
+    // ---- MIDI input ---------------------------------------------------------
+    private MidiInputHandler midiInputHandler;
+
+    // ---- Undo/redo ----------------------------------------------------------
+    private final UndoManager undoManager = new UndoManager();
+
+    // ---- Stage reference (needed for FileChooser) ---------------------------
+    private Stage primaryStage;
 
     // ---- VEGA AI ------------------------------------------------------------
     private VegaAgent vegaAgent;
@@ -140,6 +157,8 @@ public class ForgeApp extends Application {
 
     @Override
     public void start(Stage stage) {
+        primaryStage = stage;
+
         // Build audio graph first
         buildAudioGraph();
 
@@ -176,11 +195,14 @@ public class ForgeApp extends Application {
             scene.getStylesheets().add(css);
         }
 
-        // Wire keyboard
+        // Wire keyboard (includes Ctrl+Z / Ctrl+Shift+Z for undo/redo)
         hookKeys(scene);
 
         // Build initial drum beat data BEFORE wiring (so grid syncs correctly)
         buildDefaultBeat();
+
+        // Push initial state into undo history
+        undoManager.push(projectState);
 
         // Wire audio to UI panels
         wireAudioToUI();
@@ -200,6 +222,9 @@ public class ForgeApp extends Application {
     }
 
     private void shutdown() {
+        if (midiInputHandler != null) {
+            midiInputHandler.stop();
+        }
         if (stepAnimator != null) {
             stepAnimator.stop();
         }
@@ -311,6 +336,10 @@ public class ForgeApp extends Application {
         projectState.bpm = 128.0;
         vegaAgent = new VegaAgent(
                 projectState, drumEngine, voiceAllocator, clock, sequencer, effectsChain);
+
+        // MIDI input — optional, silently skipped if no device available
+        midiInputHandler = new MidiInputHandler(voiceAllocator, drumEngine);
+        midiInputHandler.start();
     }
 
     private void wireAudioToUI() {
@@ -418,6 +447,26 @@ public class ForgeApp extends Application {
             // ---- Global transport -------------------------------------------
             if (code == KeyCode.SPACE) {
                 drumPanel.togglePlayStop();
+                return;
+            }
+
+            // ---- Undo / Redo ------------------------------------------------
+            if (event.isControlDown() && code == KeyCode.Z) {
+                if (event.isShiftDown()) {
+                    // Ctrl+Shift+Z → redo
+                    ProjectState redone = undoManager.redo();
+                    if (redone != null) {
+                        applyProjectState(redone);
+                        System.out.println("[FORGE] Redo → BPM=" + redone.bpm);
+                    }
+                } else {
+                    // Ctrl+Z → undo
+                    ProjectState undone = undoManager.undo();
+                    if (undone != null) {
+                        applyProjectState(undone);
+                        System.out.println("[FORGE] Undo → BPM=" + undone.bpm);
+                    }
+                }
                 return;
             }
 
@@ -559,6 +608,111 @@ public class ForgeApp extends Application {
         activeKeyNotes.clear();
     }
 
+    /**
+     * Apply a restored project state (from undo/redo or load) to the live engine.
+     * Only syncs the BPM for now; full pattern sync would require additional wiring.
+     */
+    private void applyProjectState(ProjectState state) {
+        projectState = state;
+        clock.setBpm(state.bpm);
+    }
+
+    // =========================================================================
+    // Export helpers
+    // =========================================================================
+
+    private void doExportWav() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export Pattern as WAV");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("WAV Audio", "*.wav"));
+        chooser.setInitialFileName("forge_pattern.wav");
+        File file = chooser.showSaveDialog(primaryStage);
+        if (file == null) return;
+
+        new Thread(() -> {
+            try {
+                com.forge.model.Pattern pat = drumPanel.getActivePattern();
+                WavExporter.exportPattern(
+                    pat, projectState.drumPatches,
+                    projectState.globalSynthPatch,
+                    projectState.bpm, 1, file);
+                Platform.runLater(() -> showInfo("WAV Export", "Exported to:\n" + file.getAbsolutePath()));
+            } catch (Exception ex) {
+                Platform.runLater(() -> showError("WAV Export Failed", ex.getMessage()));
+            }
+        }, "forge-wav-export").start();
+    }
+
+    private void doExportMidi() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export Pattern as MIDI");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("MIDI File", "*.mid"));
+        chooser.setInitialFileName("forge_pattern.mid");
+        File file = chooser.showSaveDialog(primaryStage);
+        if (file == null) return;
+
+        try {
+            com.forge.model.Pattern pat = drumPanel.getActivePattern();
+            MidiExporter.exportPattern(pat, projectState.bpm, file);
+            showInfo("MIDI Export", "Exported to:\n" + file.getAbsolutePath());
+        } catch (Exception ex) {
+            showError("MIDI Export Failed", ex.getMessage());
+        }
+    }
+
+    private void doSaveProject() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Save Project");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("FORGE Project", "*.forge"));
+        chooser.setInitialFileName("project.forge");
+        File file = chooser.showSaveDialog(primaryStage);
+        if (file == null) return;
+
+        try {
+            ProjectPersistence.save(projectState, file);
+            showInfo("Save Project", "Saved to:\n" + file.getAbsolutePath());
+        } catch (Exception ex) {
+            showError("Save Failed", ex.getMessage());
+        }
+    }
+
+    private void doLoadProject() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Load Project");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("FORGE Project", "*.forge"));
+        File file = chooser.showOpenDialog(primaryStage);
+        if (file == null) return;
+
+        try {
+            ProjectState loaded = ProjectPersistence.load(file);
+            applyProjectState(loaded);
+            undoManager.push(loaded);
+            showInfo("Load Project", "Loaded from:\n" + file.getAbsolutePath());
+        } catch (Exception ex) {
+            showError("Load Failed", ex.getMessage());
+        }
+    }
+
+    private void showInfo(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showError(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message != null ? message : "Unknown error");
+        alert.showAndWait();
+    }
+
     // =========================================================================
     // Title bar
     // =========================================================================
@@ -640,12 +794,21 @@ public class ForgeApp extends Application {
         );
         bar.setAlignment(Pos.CENTER_LEFT);
 
-        String[] menus = {
-            "Protocol", "Edit", "Synth.Array", "Drum.Seq",
-            "VEGA", "Export", "Diagnostics"
-        };
+        // Menu items: label → action (null = placeholder/future)
+        Map<String, Runnable> menuActions = new java.util.LinkedHashMap<>();
+        menuActions.put("Protocol",   () -> doSaveProject());       // Protocol → Save
+        menuActions.put("Open",       () -> doLoadProject());
+        menuActions.put("Synth.Array", null);
+        menuActions.put("Drum.Seq",   null);
+        menuActions.put("VEGA",       null);
+        menuActions.put("Exp.WAV",    () -> doExportWav());
+        menuActions.put("Exp.MIDI",   () -> doExportMidi());
+        menuActions.put("Diagnostics",null);
 
-        for (String m : menus) {
+        for (Map.Entry<String, Runnable> entry : menuActions.entrySet()) {
+            String m = entry.getKey();
+            Runnable action = entry.getValue();
+
             Label lbl = new Label(m);
             lbl.setFont(Font.font("Monospace", FontWeight.NORMAL, 11));
             lbl.setTextFill(Color.web("#aaaaaa"));
@@ -659,6 +822,9 @@ public class ForgeApp extends Application {
                 lbl.setTextFill(Color.web("#aaaaaa"));
                 lbl.setStyle("-fx-cursor: hand; -fx-background-color: transparent;");
             });
+            if (action != null) {
+                lbl.setOnMouseClicked(e -> action.run());
+            }
             bar.getChildren().add(lbl);
         }
 

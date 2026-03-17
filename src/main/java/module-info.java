@@ -26,4 +26,6 @@ module com.forge {
     exports com.forge.ui.panels;
     exports com.forge.ui.visualizer;
     exports com.forge.vega;
+    exports com.forge.midi;
+    exports com.forge.audio.export;
 }
