@@ -4,6 +4,7 @@ import com.forge.audio.effects.Effect;
 import com.forge.audio.effects.EffectType;
 import com.forge.audio.effects.EffectsChain;
 import com.forge.audio.synth.SynthVoice;
+import com.forge.model.EngineType;
 import com.forge.model.FilterType;
 import com.forge.model.SynthPatch;
 import com.forge.model.WaveShape;
@@ -12,6 +13,8 @@ import com.forge.ui.controls.ForgeFader;
 import com.forge.ui.controls.ForgeKnob;
 import com.forge.ui.controls.WaveformDisplay;
 import com.forge.ui.theme.ForgeColors;
+
+import java.util.function.Consumer;
 
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -42,6 +45,13 @@ public class SynthPanel extends VBox {
     private SynthVoice[] voices;
     private SynthPatch patch;
     private EffectsChain effectsChain;
+
+    // ---- Engine-switch callback ---------------------------------------------
+    private Consumer<EngineType> onEngineSwitch;
+
+    // ---- Current active engine tab ------------------------------------------
+    private EngineType activeEngine = EngineType.SUBTRACTIVE;
+    private Label[] engineTabLabels;
 
     // ---- Oscillator controls ------------------------------------------------
     private WaveformDisplay waveDisplayA;
@@ -145,11 +155,15 @@ public class SynthPanel extends VBox {
         tabs.setStyle("-fx-background-color: #0d0d0d; -fx-border-color: transparent transparent #1a1a1a transparent; -fx-border-width: 0 0 1 0;");
 
         String[] names = {"SUB", "FM", "WAVE", "GRAIN"};
+        EngineType[] engineTypes = {EngineType.SUBTRACTIVE, EngineType.FM, EngineType.WAVETABLE, EngineType.GRANULAR};
+        engineTabLabels = new Label[names.length];
+
         for (int i = 0; i < names.length; i++) {
             Label tab = new Label(names[i]);
             tab.setFont(Font.font("Monospace", FontWeight.BOLD, 9));
             tab.setPadding(new Insets(3, 8, 3, 8));
             tab.setAlignment(Pos.CENTER);
+            engineTabLabels[i] = tab;
 
             if (i == 0) {
                 tab.setTextFill(Color.WHITE);
@@ -159,9 +173,54 @@ public class SynthPanel extends VBox {
                 tab.setTextFill(Color.web("#555555"));
                 tab.setStyle("-fx-background-color: #1a1a1a; -fx-padding: 3 8 3 8; -fx-cursor: hand; -fx-background-radius: 2;");
             }
+
+            final EngineType et = engineTypes[i];
+            tab.setOnMouseClicked(e -> switchEngine(et));
+
             tabs.getChildren().add(tab);
         }
         return tabs;
+    }
+
+    /**
+     * Set the callback invoked when the user clicks an engine tab.
+     * ForgeApp wires this to create new voices and replace the allocator pool.
+     */
+    public void setOnEngineSwitch(Consumer<EngineType> callback) {
+        this.onEngineSwitch = callback;
+    }
+
+    /** Called when the user clicks an engine tab. Updates tab visuals and fires the callback. */
+    private void switchEngine(EngineType engine) {
+        if (engine == activeEngine) return;
+        activeEngine = engine;
+        updateEngineTabVisuals();
+        if (onEngineSwitch != null) {
+            onEngineSwitch.accept(engine);
+        }
+    }
+
+    private void updateEngineTabVisuals() {
+        EngineType[] engineTypes = {EngineType.SUBTRACTIVE, EngineType.FM, EngineType.WAVETABLE, EngineType.GRANULAR};
+        if (engineTabLabels == null) return;
+        for (int i = 0; i < engineTabLabels.length; i++) {
+            Label tab = engineTabLabels[i];
+            if (engineTypes[i] == activeEngine) {
+                tab.setTextFill(Color.WHITE);
+                tab.setStyle("-fx-background-color: " + ForgeColors.hex(ForgeColors.ARGENT_RED) + ";" +
+                    "-fx-padding: 3 8 3 8; -fx-cursor: hand; -fx-background-radius: 2;");
+            } else {
+                tab.setTextFill(Color.web("#555555"));
+                tab.setStyle("-fx-background-color: #1a1a1a; -fx-padding: 3 8 3 8; -fx-cursor: hand; -fx-background-radius: 2;");
+            }
+        }
+    }
+
+    /**
+     * Update the voices reference after an engine switch (so pushPatch works with new voices).
+     */
+    public void updateVoices(SynthVoice[] newVoices) {
+        this.voices = newVoices;
     }
 
     // =========================================================================

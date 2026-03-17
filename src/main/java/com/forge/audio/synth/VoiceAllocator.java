@@ -15,9 +15,9 @@ public class VoiceAllocator {
 
     private static final int FREE = -1;
 
-    private final SynthVoice[] voices;
-    private final int[]  voiceNotes;       // MIDI note each voice is playing; FREE = available
-    private final long[] voiceStartTimes;  // System.nanoTime() of the last noteOn for each voice
+    private SynthVoice[] voices;
+    private int[]  voiceNotes;       // MIDI note each voice is playing; FREE = available
+    private long[] voiceStartTimes;  // System.nanoTime() of the last noteOn for each voice
 
     /**
      * Construct a VoiceAllocator over the provided pre-initialised voice array.
@@ -36,6 +36,37 @@ public class VoiceAllocator {
             voiceNotes[i]      = FREE;
             voiceStartTimes[i] = 0L;
         }
+    }
+
+    /**
+     * Replace the voice pool with a new set of pre-initialised voices.
+     *
+     * <p>The caller is responsible for:
+     * <ol>
+     *   <li>Calling {@link #releaseAll()} before this method to silence active voices</li>
+     *   <li>Disconnecting old voices from the mixer after a brief silence period</li>
+     *   <li>Connecting new voices to the mixer before calling this</li>
+     * </ol>
+     *
+     * @param newVoices replacement voice pool; must not be {@code null} or empty
+     */
+    public synchronized void replaceVoices(SynthVoice[] newVoices) {
+        if (newVoices == null || newVoices.length == 0) {
+            throw new IllegalArgumentException("newVoices must be non-null and non-empty");
+        }
+        this.voices          = newVoices;
+        this.voiceNotes      = new int[newVoices.length];
+        this.voiceStartTimes = new long[newVoices.length];
+
+        for (int i = 0; i < newVoices.length; i++) {
+            voiceNotes[i]      = FREE;
+            voiceStartTimes[i] = 0L;
+        }
+    }
+
+    /** Returns a snapshot of the current voice pool (for external use such as disconnect). */
+    public SynthVoice[] getVoices() {
+        return voices;
     }
 
     /**

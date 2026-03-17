@@ -9,12 +9,16 @@ import com.forge.audio.sequencer.SectionManager;
 import com.forge.audio.sequencer.SequencerClock;
 import com.forge.audio.sequencer.SequencerListener;
 import com.forge.audio.sequencer.StepSequencer;
+import com.forge.audio.synth.FmSynthVoice;
+import com.forge.audio.synth.GranularSynthVoice;
 import com.forge.audio.synth.SubtractiveSynthVoice;
 import com.forge.audio.synth.SynthVoice;
 import com.forge.audio.synth.VoiceAllocator;
+import com.forge.audio.synth.WavetableSynthVoice;
 import com.forge.midi.MidiInputHandler;
 import com.forge.model.DrumPatch;
 import com.forge.model.DrumTrack;
+import com.forge.model.EngineType;
 import com.forge.model.ProjectPersistence;
 import com.forge.model.ProjectState;
 import com.forge.model.SynthPatch;
@@ -115,6 +119,17 @@ public class ForgeApp extends Application {
     private final AtomicInteger currentStep = new AtomicInteger(-1);
     private AnimationTimer stepAnimator;
 
+    // ---- Status bar live labels ---------------------------------------------
+    private Label statusLeft;
+    private Label statusRight;
+    private AnimationTimer statusAnimator;
+
+    // ---- CRT overlay reference (for toggle) ---------------------------------
+    private CrtOverlay crtOverlay;
+
+    // ---- Current engine type ------------------------------------------------
+    private EngineType currentEngine = EngineType.SUBTRACTIVE;
+
     // ---- Keyboard tracking --------------------------------------------------
     private final Set<KeyCode> heldKeys = new HashSet<>();
     private final Map<KeyCode, Integer> activeKeyNotes = new HashMap<>();
@@ -177,13 +192,13 @@ public class ForgeApp extends Application {
         main.setBottom(buildStatusBar());
 
         // CRT overlay on top of everything
-        CrtOverlay crt = new CrtOverlay();
+        crtOverlay = new CrtOverlay();
 
-        StackPane root = new StackPane(main, crt);
+        StackPane root = new StackPane(main, crtOverlay);
         root.setStyle("-fx-background-color: #080808;");
 
-        crt.prefWidthProperty().bind(root.widthProperty());
-        crt.prefHeightProperty().bind(root.heightProperty());
+        crtOverlay.prefWidthProperty().bind(root.widthProperty());
+        crtOverlay.prefHeightProperty().bind(root.heightProperty());
 
         Scene scene = new Scene(root, WIDTH, HEIGHT, Color.web("#080808"));
 
@@ -212,6 +227,8 @@ public class ForgeApp extends Application {
 
         stage.setTitle("FORGE.EXE \u2014 Sound Terminal v2.016");
         stage.setScene(scene);
+        stage.setMinWidth(1100);
+        stage.setMinHeight(660);
         stage.setOnCloseRequest(e -> shutdown());
         stage.show();
     }
@@ -227,6 +244,9 @@ public class ForgeApp extends Application {
         }
         if (stepAnimator != null) {
             stepAnimator.stop();
+        }
+        if (statusAnimator != null) {
+            statusAnimator.stop();
         }
         if (visualizerPanel != null) {
             visualizerPanel.stop();
@@ -344,12 +364,91 @@ public class ForgeApp extends Application {
 
     private void wireAudioToUI() {
         synthPanel.wire(synthVoices, globalPatch, effectsChain);
+        synthPanel.setOnEngineSwitch(this::handleEngineSwitch);
         drumPanel.wire(clock, sequencer);
         // Wire synth grid to the same pattern the drum panel uses
         synthGrid.setPattern(drumPanel.getActivePattern());
         // Wire AnalysisBus to visualizer panel and start the animation timer
         visualizerPanel.setAnalysisBus(audioEngine.getAnalysisBus());
         visualizerPanel.start();
+        // Start live status bar updater at ~4fps
+        startStatusAnimator();
+    }
+
+    // =========================================================================
+    // Engine switching
+    // =========================================================================
+
+    /**
+     * Switch to a new synth engine type. Releases all active notes, creates fresh voices,
+     * disconnects old voices from the mixer, connects new ones, then replaces the pool.
+     */
+    private void handleEngineSwitch(EngineType engine) {
+        if (engine == currentEngine) return;
+        currentEngine = engine;
+
+        // 1. Release all active notes immediately
+        voiceAllocator.releaseAll();
+
+        // 2. Capture old voices before replacement
+        SynthVoice[] oldVoices = voiceAllocator.getVoices();
+
+        // 3. Brief delay on background thread to let release envelopes decay,
+        //    then disconnect old voices and swap in new ones.
+        new Thread(() -> {
+            try {
+                Thread.sleep(80); // ~80ms for quick release clicks
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+
+            // Disconnect old voices from mixer
+            for (int i = 0; i < oldVoices.length; i++) {
+                try {
+                    oldVoices[i].getOutput().disconnect(0, audioEngine.getMasterMixer().input, i);
+                } catch (Exception ex) {
+                    // Best-effort disconnect — ignore if already disconnected
+                }
+            }
+
+            // Create new voices
+            SynthVoice[] newVoices = createVoices(engine);
+
+            // Connect new voices to mixer
+            for (int i = 0; i < newVoices.length; i++) {
+                newVoices[i].getOutput().connect(0, audioEngine.getMasterMixer().input, i);
+            }
+
+            // Apply current patch
+            for (SynthVoice v : newVoices) {
+                v.applyPatch(globalPatch);
+            }
+
+            // Replace the voice pool
+            voiceAllocator.replaceVoices(newVoices);
+
+            // Update synth panel voices reference on FX thread
+            Platform.runLater(() -> {
+                synthVoices = newVoices;
+                synthPanel.updateVoices(newVoices);
+                System.out.println("[FORGE] Engine switched to: " + engine);
+            });
+        }, "forge-engine-switch").start();
+    }
+
+    /** Create 8 new voices of the given engine type, initialised with the JSyn synth. */
+    private SynthVoice[] createVoices(EngineType engine) {
+        SynthVoice[] voices = new SynthVoice[8];
+        for (int i = 0; i < 8; i++) {
+            voices[i] = switch (engine) {
+                case SUBTRACTIVE -> new SubtractiveSynthVoice();
+                case FM          -> new FmSynthVoice();
+                case WAVETABLE   -> new WavetableSynthVoice();
+                case GRANULAR    -> new GranularSynthVoice();
+            };
+            voices[i].init(audioEngine.getSynth());
+        }
+        return voices;
     }
 
     private void wireVegaPanel() {
@@ -388,7 +487,7 @@ public class ForgeApp extends Application {
     }
 
     private void buildDefaultBeat() {
-        // Pre-load pattern A with a basic 4-on-floor beat.
+        // Pre-load pattern A with a punchy 4-on-floor beat in D MINOR @ 128 BPM.
         // Called BEFORE wireAudioToUI() so the grid displays the beat when synced.
         com.forge.model.Pattern pat = drumPanel.getActivePattern();
 
@@ -408,6 +507,33 @@ public class ForgeApp extends Application {
         for (int s = 0; s < 16; s += 2) {
             pat.drumSteps[DrumTrack.HAT.ordinal()][s].active = true;
             pat.drumSteps[DrumTrack.HAT.ordinal()][s].velocity = 0.7;
+        }
+
+        // Perc: steps 2, 10 (ghosted off-beat accent)
+        for (int s : new int[]{2, 10}) {
+            pat.drumSteps[DrumTrack.PERC.ordinal()][s].active = true;
+            pat.drumSteps[DrumTrack.PERC.ordinal()][s].velocity = 0.65;
+        }
+
+        // Set project key to D MINOR
+        projectState.rootNote = "D";
+        projectState.scaleType = com.forge.model.ScaleType.MINOR;
+        projectState.bpm = 128.0;
+
+        // Better default synth patch: SAW + SQUARE, LP filter, punchy envelope
+        globalPatch.oscAShape = com.forge.model.WaveShape.SAW;
+        globalPatch.oscBShape = com.forge.model.WaveShape.SQUARE;
+        globalPatch.oscALevel = 0.8;
+        globalPatch.oscBLevel = 0.4;
+        globalPatch.filterCutoff = 2000.0;
+        globalPatch.filterResonance = 0.1;
+        globalPatch.ampAttack  = 0.01;
+        globalPatch.ampDecay   = 0.3;
+        globalPatch.ampSustain = 0.7;
+        globalPatch.ampRelease = 0.3;
+        // Apply updated patch to existing voices
+        for (SynthVoice v : synthVoices) {
+            v.applyPatch(globalPatch);
         }
     }
 
@@ -447,6 +573,14 @@ public class ForgeApp extends Application {
             // ---- Global transport -------------------------------------------
             if (code == KeyCode.SPACE) {
                 drumPanel.togglePlayStop();
+                return;
+            }
+
+            // ---- CRT toggle (Ctrl+E for Effects/CRT overlay) ----------------
+            if (event.isControlDown() && code == KeyCode.E) {
+                if (crtOverlay != null) {
+                    crtOverlay.setEnabled(!crtOverlay.isEnabled());
+                }
                 return;
             }
 
@@ -945,17 +1079,94 @@ public class ForgeApp extends Application {
         );
         bar.setAlignment(Pos.CENTER_LEFT);
 
-        Label left = makeStatusLabel(
-            "\u25C7 VEGA:ONLINE  \u25CF AUDIO:ACTIVE  VERSE[4/8]  Dm"
-        );
+        statusLeft  = makeStatusLabel("\u25C7 VEGA:--  \u25CF AUDIO:--");
+        statusRight = makeStatusLabel("CPU:OK  |  5.8ms  |  44.1kHz");
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label right = makeStatusLabel(
-            "CPU:23%  |  5.8ms  |  44.1kHz  |  MIDI:CH1"
-        );
 
-        bar.getChildren().addAll(left, spacer, right);
+        bar.getChildren().addAll(statusLeft, spacer, statusRight);
         return bar;
+    }
+
+    /** Start the 4fps status bar update timer. */
+    private void startStatusAnimator() {
+        // Fixed latency: 256 samples / 44100 Hz ≈ 5.8 ms
+        final String latency    = String.format("%.1fms", 1000.0 * AudioEngine.BUFFER_SIZE / AudioEngine.SAMPLE_RATE);
+        final String sampleRate = "44.1kHz";
+
+        statusAnimator = new AnimationTimer() {
+            private long lastUpdate = 0L;
+
+            @Override
+            public void handle(long now) {
+                // Update at ~4 fps (every 250ms)
+                if (now - lastUpdate < 250_000_000L) return;
+                lastUpdate = now;
+
+                // VEGA status
+                String vegaStatus = (System.getenv("ANTHROPIC_API_KEY") != null &&
+                                     !System.getenv("ANTHROPIC_API_KEY").isBlank())
+                        ? "ONLINE" : "NO KEY";
+
+                // Audio status
+                String audioStatus = (audioEngine != null && audioEngine.isRunning()) ? "ACTIVE" : "IDLE";
+
+                // Current section / pattern
+                String section = buildSectionDisplay();
+
+                // Key from project state
+                String key = buildKeyDisplay();
+
+                statusLeft.setText(
+                    "\u25C7 VEGA:" + vegaStatus +
+                    "  \u25CF AUDIO:" + audioStatus +
+                    "  " + section +
+                    "  " + key
+                );
+                statusRight.setText(
+                    "CPU:OK  |  " + latency + "  |  " + sampleRate
+                );
+            }
+        };
+        statusAnimator.start();
+    }
+
+    private String buildSectionDisplay() {
+        if (sectionManager == null || projectState == null) return "PATTERN A";
+        // Try to show current section + bar
+        com.forge.model.Section active = sectionManager.getActiveSection();
+        if (active != null) {
+            int barInSection = sectionManager.getCurrentBar() + 1; // 1-based for display
+            int totalBars    = active.barLength;
+            return active.name.toUpperCase() + " [" + barInSection + "/" + totalBars + "]";
+        }
+        // Fall back to pattern name
+        int patIdx = projectState.activePatternIndex;
+        char patLetter = (char)('A' + Math.max(0, Math.min(25, patIdx)));
+        return "PATTERN " + patLetter;
+    }
+
+    private String buildKeyDisplay() {
+        if (projectState == null) return "Cm";
+        String root = projectState.rootNote != null ? projectState.rootNote : "C";
+        com.forge.model.ScaleType scale = projectState.scaleType;
+        if (scale == null) scale = com.forge.model.ScaleType.MINOR;
+        String scaleAbbrev = switch (scale) {
+            case MAJOR            -> "MAJ";
+            case MINOR            -> "MIN";
+            case DORIAN           -> "DOR";
+            case PHRYGIAN         -> "PHR";
+            case LYDIAN           -> "LYD";
+            case MIXOLYDIAN       -> "MIX";
+            case AEOLIAN          -> "AEO";
+            case LOCRIAN          -> "LOC";
+            case PENTATONIC_MAJOR -> "PMAJ";
+            case PENTATONIC_MINOR -> "PMIN";
+            case BLUES            -> "BLU";
+            case CHROMATIC        -> "CHR";
+        };
+        return root + " " + scaleAbbrev;
     }
 
     private Label makeStatusLabel(String text) {

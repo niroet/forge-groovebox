@@ -140,4 +140,42 @@ class VoiceAllocatorTest {
                     "applyPatch must not throw on any voice in the pool");
         }
     }
+
+    @Test
+    void replaceVoicesSwapsPool() {
+        // Allocate a note on the original pool
+        allocator.allocate(60, 0.8);
+
+        // Build a fresh pool of FmSynthVoice
+        SynthVoice[] newVoices = new SynthVoice[VOICE_COUNT];
+        for (int i = 0; i < VOICE_COUNT; i++) {
+            FmSynthVoice v = new FmSynthVoice();
+            v.init(engine.getSynth());
+            newVoices[i] = v;
+        }
+
+        allocator.releaseAll();
+        allocator.replaceVoices(newVoices);
+
+        // All slots must be free after replacement
+        for (int i = 0; i < VOICE_COUNT; i++) {
+            assertEquals(-1, allocator.getVoiceNote(i), "all slots must be FREE after replaceVoices");
+        }
+
+        // Allocation on new pool must work
+        SynthVoice allocated = allocator.allocate(62, 0.7);
+        assertNotNull(allocated, "must allocate from new voice pool");
+        assertSame(allocated, newVoices[0], "allocated voice must be from new pool");
+    }
+
+    @Test
+    void replaceVoicesRejectsNull() {
+        assertThrows(IllegalArgumentException.class, () -> allocator.replaceVoices(null));
+    }
+
+    @Test
+    void getVoicesReturnsCurrentPool() {
+        SynthVoice[] poolRef = allocator.getVoices();
+        assertSame(voices, poolRef, "getVoices must return the current pool reference");
+    }
 }

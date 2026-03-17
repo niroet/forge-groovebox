@@ -1,3 +1,5 @@
+// Legacy demo — use ForgeApp for the full groovebox.
+// This class is kept for reference but ForgeApp is the main entry point.
 package com.forge;
 
 import com.forge.audio.engine.AudioEngine;
