@@ -3,6 +3,7 @@ package com.forge;
 import com.forge.audio.drums.DrumEngine;
 import com.forge.audio.effects.EffectsChain;
 import com.forge.audio.engine.AudioEngine;
+import com.forge.audio.sequencer.SectionManager;
 import com.forge.audio.sequencer.SequencerClock;
 import com.forge.audio.sequencer.SequencerListener;
 import com.forge.audio.sequencer.StepSequencer;
@@ -78,6 +79,7 @@ public class ForgeApp extends Application {
     private EffectsChain effectsChain;
     private SynthPatch globalPatch;
     private ClockDriver clockDriver;
+    private SectionManager sectionManager;
 
     // ---- Project model ------------------------------------------------------
     private ProjectState projectState;
@@ -278,6 +280,9 @@ public class ForgeApp extends Application {
         // Step sequencer
         sequencer = new StepSequencer(drumEngine, voiceAllocator);
 
+        // Section manager — live arrangement
+        sectionManager = new SectionManager(projectState, sequencer);
+
         // Clock listener for step updates
         clock.setListener(new SequencerListener() {
             @Override
@@ -289,6 +294,7 @@ public class ForgeApp extends Application {
             @Override
             public void onBarEnd(int barNumber) {
                 sequencer.onBarEnd(barNumber);
+                sectionManager.onBarEnd();
             }
         });
 
@@ -455,18 +461,18 @@ public class ForgeApp extends Application {
                 }
             }
 
-            // ---- 1-9: trigger section (placeholder) -------------------------
+            // ---- 1-9: queue section by index --------------------------------
             if (!event.isControlDown()) {
                 switch (code) {
-                    case DIGIT1 -> { System.out.println("[FORGE] section: 1"); return; }
-                    case DIGIT2 -> { System.out.println("[FORGE] section: 2"); return; }
-                    case DIGIT3 -> { System.out.println("[FORGE] section: 3"); return; }
-                    case DIGIT4 -> { System.out.println("[FORGE] section: 4"); return; }
-                    case DIGIT5 -> { System.out.println("[FORGE] section: 5"); return; }
-                    case DIGIT6 -> { System.out.println("[FORGE] section: 6"); return; }
-                    case DIGIT7 -> { System.out.println("[FORGE] section: 7"); return; }
-                    case DIGIT8 -> { System.out.println("[FORGE] section: 8"); return; }
-                    case DIGIT9 -> { System.out.println("[FORGE] section: 9"); return; }
+                    case DIGIT1 -> { sectionManager.queueSectionByIndex(0); return; }
+                    case DIGIT2 -> { sectionManager.queueSectionByIndex(1); return; }
+                    case DIGIT3 -> { sectionManager.queueSectionByIndex(2); return; }
+                    case DIGIT4 -> { sectionManager.queueSectionByIndex(3); return; }
+                    case DIGIT5 -> { sectionManager.queueSectionByIndex(4); return; }
+                    case DIGIT6 -> { sectionManager.queueSectionByIndex(5); return; }
+                    case DIGIT7 -> { sectionManager.queueSectionByIndex(6); return; }
+                    case DIGIT8 -> { sectionManager.queueSectionByIndex(7); return; }
+                    case DIGIT9 -> { sectionManager.queueSectionByIndex(8); return; }
                     default -> { /* fall through */ }
                 }
             }
