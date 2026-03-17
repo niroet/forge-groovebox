@@ -8,6 +8,7 @@ module com.forge {
     requires langchain4j.anthropic;
     requires iirj;
     requires java.desktop; // for javax.sound.midi, javax.sound.sampled
+    requires java.sql;     // needed by JSyn at runtime
     requires jsyn;
 
     opens com.forge.model to com.google.gson; // Gson reflection for persistence
@@ -19,4 +20,6 @@ module com.forge {
     exports com.forge.audio.drums;
     exports com.forge.audio.sequencer;
     exports com.forge.audio.effects;
+    exports com.forge.ui.theme;
+    exports com.forge.ui.controls;
 }

@@ -1,0 +1,229 @@
+/* =============================================================================
+   FORGE.EXE — Global DOOM Theme
+   Dark void backgrounds, argent orange accents, Win98-beveled controls.
+   ============================================================================= */
+
+/* --- Root / Scene --------------------------------------------------------- */
+.root {
+    -fx-base: #0a0a0a;
+    -fx-background: #080808;
+    -fx-control-inner-background: #0a0a0a;
+    -fx-background-color: #080808;
+    -fx-font-family: "Monospace";
+    -fx-font-size: 12px;
+    -fx-text-fill: #cccccc;
+}
+
+/* --- Labels --------------------------------------------------------------- */
+.label {
+    -fx-text-fill: #888888;
+    -fx-font-family: "Monospace";
+}
+
+/* --- Buttons (Win98 beveled dark) ---------------------------------------- */
+.button {
+    -fx-background-color:
+        linear-gradient(to bottom, #3a3a3a, #1a1a1a);
+    -fx-border-color: #555555 #1a1a1a #1a1a1a #555555;
+    -fx-border-width: 1px;
+    -fx-text-fill: #cccccc;
+    -fx-font-family: "Monospace";
+    -fx-cursor: hand;
+    -fx-padding: 2px 8px;
+}
+
+.button:hover {
+    -fx-background-color:
+        linear-gradient(to bottom, #4a2a00, #2a1400);
+    -fx-border-color: #ff6600 #441100 #441100 #ff6600;
+    -fx-text-fill: #ff8800;
+}
+
+.button:pressed {
+    -fx-background-color:
+        linear-gradient(to bottom, #1a1a1a, #3a3a3a);
+    -fx-border-color: #1a1a1a #555555 #555555 #1a1a1a;
+    -fx-text-fill: #ff6600;
+}
+
+.button:focused {
+    -fx-border-color: #ff8800 #441100 #441100 #ff8800;
+    -fx-effect: dropshadow(gaussian, #ff6600, 4, 0.3, 0, 0);
+}
+
+/* --- Title bar buttons ---------------------------------------------------- */
+.title-btn {
+    -fx-background-color:
+        linear-gradient(to bottom, #3a3a3a, #1a1a1a);
+    -fx-border-color: #555555 #1a1a1a #1a1a1a #555555;
+    -fx-border-width: 1px;
+    -fx-text-fill: #cccccc;
+    -fx-font-family: "Monospace";
+    -fx-font-size: 10px;
+    -fx-cursor: hand;
+    -fx-padding: 0px 5px;
+    -fx-min-width: 16px;
+    -fx-min-height: 14px;
+    -fx-max-height: 14px;
+}
+
+.title-btn:hover {
+    -fx-background-color: #441100;
+    -fx-text-fill: #ff6600;
+}
+
+.title-btn.close-btn:hover {
+    -fx-background-color: #660000;
+    -fx-text-fill: #ff4444;
+}
+
+/* --- TextField / TextArea ------------------------------------------------- */
+.text-field,
+.text-area {
+    -fx-background-color: #050505;
+    -fx-border-color: #333333;
+    -fx-border-width: 1px;
+    -fx-text-fill: #cccccc;
+    -fx-font-family: "Monospace";
+    -fx-prompt-text-fill: #444444;
+}
+
+.text-field:focused,
+.text-area:focused {
+    -fx-border-color: #ff8800;
+    -fx-effect: dropshadow(gaussian, #ff8800, 4, 0.2, 0, 0);
+}
+
+/* --- ComboBox / ChoiceBox ------------------------------------------------- */
+.combo-box,
+.choice-box {
+    -fx-background-color: #0a0a0a;
+    -fx-border-color: #333333;
+    -fx-border-width: 1px;
+    -fx-text-fill: #ff8800;
+    -fx-font-family: "Monospace";
+}
+
+.combo-box .list-cell,
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: #0a0a0a;
+    -fx-text-fill: #ff8800;
+    -fx-font-family: "Monospace";
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: #1a0800;
+    -fx-text-fill: #ffcc00;
+}
+
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #2a1000;
+    -fx-text-fill: #ff8800;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: #1a1a1a;
+    -fx-border-color: #333333;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #888888;
+}
+
+/* --- ScrollBars ----------------------------------------------------------- */
+.scroll-bar {
+    -fx-background-color: #080808;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #0a0a0a;
+    -fx-border-color: #222222;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #2a2a2a;
+    -fx-border-color: #444444;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #3a1500;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: #1a1a1a;
+    -fx-border-color: #333333;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: #666666;
+}
+
+/* --- Separator ------------------------------------------------------------ */
+.separator .line {
+    -fx-border-color: #222222;
+}
+
+/* --- Menu bar area labels ------------------------------------------------- */
+.menu-label {
+    -fx-text-fill: #aaaaaa;
+    -fx-font-family: "Monospace";
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+    -fx-padding: 2px 8px;
+}
+
+.menu-label:hover {
+    -fx-text-fill: #ff8800;
+    -fx-background-color: #1a0800;
+}
+
+/* --- Panel containers ----------------------------------------------------- */
+.forge-panel {
+    -fx-background-color: #0a0a0a;
+    -fx-border-color: #222222;
+    -fx-border-width: 1px;
+}
+
+.forge-panel-title {
+    -fx-text-fill: #444444;
+    -fx-font-family: "Monospace";
+    -fx-font-size: 11px;
+    -fx-letter-spacing: 2px;
+}
+
+/* --- Status bar ----------------------------------------------------------- */
+.status-bar {
+    -fx-background-color: #111111;
+    -fx-border-color: #222222 transparent transparent transparent;
+    -fx-border-width: 1px;
+}
+
+.status-text {
+    -fx-text-fill: #666666;
+    -fx-font-family: "Monospace";
+    -fx-font-size: 11px;
+}
+
+.status-text-active {
+    -fx-text-fill: #ff6600;
+    -fx-font-family: "Monospace";
+    -fx-font-size: 11px;
+}
+
+/* --- Slider --------------------------------------------------------------- */
+.slider .track {
+    -fx-background-color: #1a1a1a;
+    -fx-border-color: #333333;
+}
+
+.slider .thumb {
+    -fx-background-color: #ff8800;
+    -fx-background-radius: 0;
+}
+
+.slider .thumb:hover {
+    -fx-background-color: #ffcc00;
+    -fx-effect: dropshadow(gaussian, #ff8800, 6, 0.4, 0, 0);
+}
