@@ -133,8 +133,6 @@ public class DrumPanel extends VBox {
             for (int t = 0; t < 4; t++) {
                 StepButton btn = stepButtons[t][currentPlayingStep];
                 btn.setState(btn.isActive() ? StepButton.ButtonState.ON : StepButton.ButtonState.OFF);
-                btn.setScaleX(1.0);
-                btn.setScaleY(1.0);
             }
         }
 

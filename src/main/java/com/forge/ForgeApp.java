@@ -191,16 +191,15 @@ public class ForgeApp extends Application {
         // Bottom: status bar
         main.setBottom(buildStatusBar());
 
-        // CRT overlay on top of everything
-        crtOverlay = new CrtOverlay();
+        // CRT overlay disabled for layout debugging — StackPane + bound Canvas
+        // was suspected of causing continuous layout invalidation
+        // TODO: re-enable once layout is stable
+        // crtOverlay = new CrtOverlay();
+        // StackPane root = new StackPane(main, crtOverlay);
+        // crtOverlay.prefWidthProperty().bind(root.widthProperty());
+        // crtOverlay.prefHeightProperty().bind(root.heightProperty());
 
-        StackPane root = new StackPane(main, crtOverlay);
-        root.setStyle("-fx-background-color: #080808;");
-
-        crtOverlay.prefWidthProperty().bind(root.widthProperty());
-        crtOverlay.prefHeightProperty().bind(root.heightProperty());
-
-        Scene scene = new Scene(root, WIDTH, HEIGHT, Color.web("#080808"));
+        Scene scene = new Scene(main, WIDTH, HEIGHT, Color.web("#080808"));
 
         // Load CSS
         String css = getClass().getResource("/css/forge-theme.css") != null
@@ -371,7 +370,6 @@ public class ForgeApp extends Application {
         // Wire AnalysisBus to visualizer panel and start the animation timer
         visualizerPanel.setAnalysisBus(audioEngine.getAnalysisBus());
         visualizerPanel.start();
-        // Start live status bar updater at ~4fps
         startStatusAnimator();
     }
 

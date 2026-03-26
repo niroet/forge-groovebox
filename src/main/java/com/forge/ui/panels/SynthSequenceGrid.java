@@ -196,20 +196,16 @@ public class SynthSequenceGrid extends VBox {
 
         StepCell(int index) {
             this.index = index;
-            this.canvas = new Canvas();
+            // Use fixed-size canvas to avoid resize feedback loops
+            this.canvas = new Canvas(38, 28);
             getChildren().add(canvas);
-
-            // canvas tracks region size
-            canvas.widthProperty().bind(widthProperty());
-            canvas.heightProperty().bind(heightProperty());
-            canvas.widthProperty() .addListener((o, a, b) -> refresh());
-            canvas.heightProperty().addListener((o, a, b) -> refresh());
 
             setPrefHeight(28);
             setMinHeight(28);
             setMaxHeight(28);
             setPrefWidth(38);
-            setMinWidth(30);
+            setMinWidth(38);
+            setMaxWidth(38);
 
             // Click handling
             setOnMouseClicked(e -> {

@@ -66,17 +66,10 @@ public final class VisualizerPanel extends VBox {
         // Build the mode tab bar
         HBox tabBar = buildTabBar();
 
-        // Canvas — fills all remaining vertical space
-        canvas = new Canvas();
-        VBox.setVgrow(canvas, Priority.ALWAYS);
-
-        // Bind canvas size to the panel's dimensions so it fills the available space
-        canvas.widthProperty().bind(widthProperty());
-        canvas.heightProperty().bind(heightProperty().subtract(tabBar.prefHeightProperty()));
-
-        // Re-init renderer when canvas resizes
-        canvas.widthProperty().addListener((obs, old, nw) -> onCanvasResize());
-        canvas.heightProperty().addListener((obs, old, nw) -> onCanvasResize());
+        // Canvas — manually sized in layoutChildren() to avoid binding feedback loops.
+        // Canvas is NOT a resizable JavaFX node, so binding its size to the parent
+        // creates a layout invalidation cycle (canvas resize → parent relayout → canvas resize...).
+        canvas = new Canvas(400, 200); // initial size, will be updated in layoutChildren()
 
         getChildren().addAll(tabBar, canvas);
 
@@ -97,6 +90,26 @@ public final class VisualizerPanel extends VBox {
                 activeRenderer.render(canvas.getGraphicsContext2D(), w, h, analysisBus);
             }
         };
+    }
+
+    // =========================================================================
+    // Layout — manually size the canvas to avoid binding feedback loops
+    // =========================================================================
+
+    @Override
+    protected void layoutChildren() {
+        super.layoutChildren();
+        double w = getWidth();
+        // Subtract tab bar height from total
+        double tabH = getChildren().get(0).prefHeight(w);
+        double canvasH = getHeight() - tabH;
+        if (canvasH < 0) canvasH = 0;
+        if (w != canvas.getWidth() || canvasH != canvas.getHeight()) {
+            canvas.setWidth(w);
+            canvas.setHeight(canvasH);
+            canvas.setLayoutY(tabH);
+            onCanvasResize();
+        }
     }
 
     // =========================================================================

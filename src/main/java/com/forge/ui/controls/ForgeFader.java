@@ -30,14 +30,12 @@ public class ForgeFader extends Region {
     // -----------------------------------------------------------------------
 
     public ForgeFader() {
+        // Fixed-size canvas avoids resize feedback loops
         canvas = new Canvas(16, 80);
         getChildren().add(canvas);
         setPrefSize(16, 80);
-
-        canvas.widthProperty().bind(widthProperty());
-        canvas.heightProperty().bind(heightProperty());
-        canvas.widthProperty() .addListener((obs, o, n) -> draw());
-        canvas.heightProperty().addListener((obs, o, n) -> draw());
+        setMinSize(16, 80);
+        setMaxSize(16, 80);
         value.addListener((obs, o, n) -> draw());
 
         canvas.setOnMousePressed(e -> {

@@ -41,21 +41,18 @@ public class StepButton extends Region {
     // -----------------------------------------------------------------------
 
     public StepButton() {
-        canvas = new Canvas(20, 20);
+        // Fixed-size canvas avoids resize feedback loops that cause layout thrashing
+        canvas = new Canvas(26, 22);
         getChildren().add(canvas);
-        setPrefSize(20, 20);
+        setPrefSize(26, 22);
+        setMinSize(26, 22);
+        setMaxSize(26, 22);
 
         // Redraw on any relevant change
         active    .addListener((obs, o, n) -> { state.set(n ? ButtonState.ON : ButtonState.OFF); draw(); });
         velocity  .addListener((obs, o, n) -> draw());
         trackColor.addListener((obs, o, n) -> draw());
         state     .addListener((obs, o, n) -> draw());
-
-        // Bind canvas to region size
-        canvas.widthProperty().bind(widthProperty());
-        canvas.heightProperty().bind(heightProperty());
-        canvas.widthProperty() .addListener((obs, o, n) -> draw());
-        canvas.heightProperty().addListener((obs, o, n) -> draw());
 
         // Click toggles active
         setOnMouseClicked(e -> active.set(!active.get()));
